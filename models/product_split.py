@@ -7,8 +7,6 @@ import requests
 
 _logger = logging.getLogger(__name__)
 
-_logger = logging.getLogger(__name__)
-
 class ShopifyInstance(models.Model):
     _inherit = 'shopify.instance'
 
@@ -24,10 +22,15 @@ class ProductProduct(models.Model):
 
     shopify_inventory_item_id = fields.Char(string="Shopify Inventory Item ID")
     
+class ProductTmplAtLine(models.Model):
+    _inherit = 'product.template.attribute.line'
+
+    shopify_product_id = fields.Char(string="Shopify Product ID")
+    
 class ProductTemplateSplitColor(models.Model):
     _inherit = 'product.template'
 
-    def _prepare_shopify_variant_data(self, variant, instance_id, color_value, is_color_split=False, is_update=False):
+    def _prepare_shopify_variant_data(self, variant, instance_id, color_value=None, is_color_split=False, is_update=False):
         """Prepara los datos de la variante para enviar a Shopify"""
         variant_data = {
             "price": str(variant.lst_price),
@@ -40,9 +43,8 @@ class ProductTemplateSplitColor(models.Model):
         if is_update and variant.shopify_variant_id:
             variant_data["id"] = variant.shopify_variant_id
 
-        if is_color_split:
+        if is_color_split and color_value:
             # Si estamos separando por colores, solo usamos el atributo talla
-            
             size_option_key = f"option{instance_id.size_option_position}"
             color_option_key = f"option{instance_id.color_option_position}"
             
@@ -115,7 +117,6 @@ class ProductTemplateSplitColor(models.Model):
                         "product": {
                             "title": f"{product.name} - {color_value.name}",
                             "body_html": product.description or "",
-                            "variants": variant_data,
                             "options": [
                                 {
                                     "name": "Color",
@@ -132,19 +133,20 @@ class ProductTemplateSplitColor(models.Model):
                         }
                     }
 
-                    # Determinar si crear nuevo o actualizar existente
-                    shopify_id = color_line.shopify_product_id
-                    if shopify_id and update:
-                        url = self.get_products_url(instance_id, f'products/{shopify_id}.json')
+                    # Si el producto ya existe, solo actualizamos el producto y sus opciones
+                    if color_line.shopify_product_id and update:
+                        product_data["product"]["id"] = color_line.shopify_product_id
+                        url = self.get_products_url(instance_id, f'products/{color_line.shopify_product_id}.json')
                         response = requests.put(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info(f"Updating Shopify product {shopify_id}")
+                        _logger.info(f"Updating Shopify product {color_line.shopify_product_id}")
 
                         if response.ok:
-                            # Actualizar los IDs de las variantes en Odoo
-                            shopify_product = response.json().get('product', {})
-                            shopify_variants = shopify_product.get('variants', [])
-                            self._update_variant_ids(variants, shopify_variants)
+                            # Actualizar las variantes individualmente
+                            for variant in variants:
+                                self._update_shopify_variant(variant, instance_id, headers)
                     else:
+                        # Si es un nuevo producto, enviamos también las variantes
+                        product_data["product"]["variants"] = variant_data
                         url = self.get_products_url(instance_id, 'products.json')
                         response = requests.post(url, headers=headers, data=json.dumps(product_data))
                         _logger.info("Creating new Shopify product")
@@ -192,7 +194,7 @@ class ProductTemplateSplitColor(models.Model):
     def _export_single_product(self, product, instance_id, headers, update):
         """Exporta un producto sin separación por colores"""
         variant_data = [
-            self._prepare_shopify_variant_data(variant, instance_id, False, update)
+            self._prepare_shopify_variant_data(variant, instance_id, is_update=update)
             for variant in product.product_variant_ids
         ]
 
@@ -200,7 +202,6 @@ class ProductTemplateSplitColor(models.Model):
             "product": {
                 "title": product.name,
                 "body_html": product.description or "",
-                "variants": variant_data,
                 "tags": ','.join(tag.name for tag in product.product_tag_ids)
             }
         }
@@ -217,11 +218,19 @@ class ProductTemplateSplitColor(models.Model):
                     })
             product_data["product"]["options"] = options
 
-        # Determinar si crear nuevo o actualizar existente
+        # Si el producto ya existe, solo actualizamos el producto y sus opciones
         if product.shopify_product_id and update:
+            product_data["product"]["id"] = product.shopify_product_id
             url = self.get_products_url(instance_id, f'products/{product.shopify_product_id}.json')
             response = requests.put(url, headers=headers, data=json.dumps(product_data))
+            
+            if response.ok:
+                # Actualizar las variantes individualmente
+                for variant in product.product_variant_ids:
+                    self._update_shopify_variant(variant, instance_id, headers)
         else:
+            # Si es un nuevo producto, enviamos también las variantes
+            product_data["product"]["variants"] = variant_data
             url = self.get_products_url(instance_id, 'products.json')
             response = requests.post(url, headers=headers, data=json.dumps(product_data))
 
@@ -245,3 +254,15 @@ class ProductTemplateSplitColor(models.Model):
         shop_url = "https://{}.myshopify.com/admin/api/{}/{}".format(instance_id.shopify_host,
                                                                      instance_id.shopify_version, endpoint)
         return shop_url
+        
+    def _update_shopify_variant(self, variant, instance_id, headers):
+        """Actualiza una variante en Shopify usando el endpoint variants/<id_variant>.json"""
+        variant_data = self._prepare_shopify_variant_data(variant, instance_id, is_update=True)
+        url = self.get_products_url(instance_id, f'variants/{variant.shopify_variant_id}.json')
+        response = requests.put(url, headers=headers, data=json.dumps({"variant": variant_data}))
+        
+        if response.ok:
+            _logger.info(f"Successfully updated variant {variant.default_code} in Shopify")
+        else:
+            _logger.error(f"Error updating variant {variant.default_code}: {response.text}")
+            raise UserError(f"Error updating variant {variant.default_code}: {response.text}")
