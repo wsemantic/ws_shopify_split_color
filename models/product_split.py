@@ -64,6 +64,7 @@ class ProductTemplateSplitColor(models.Model):
         Exporta productos a Shopify, filtrando por aquellos modificados desde la última exportación.
         """
         for instance_id in shopify_instance_ids:
+            _logger.info("WSSH Starting product export for instance %s", instance_id.name)                                                                              
             # Filtrar productos modificados desde la última exportación
             domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
             products_to_export = self.search(domain)
@@ -149,7 +150,7 @@ class ProductTemplateSplitColor(models.Model):
                         product_data["product"]["variants"] = variant_data
                         url = self.get_products_url(instance_id, 'products.json')
                         response = requests.post(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info("Creating new Shopify product")
+                        _logger.info("WSSHCreating new Shopify product")
 
                         if response.ok:
                             shopify_product = response.json().get('product', {})
@@ -272,6 +273,7 @@ class ProductTemplateSplitColor(models.Model):
             shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
         
         for shopify_instance_id in shopify_instance_ids:
+            _logger.info("WSSH Starting product import for instance %s", shopify_instance_id.name)                                                                                                  
             url = self.get_products_url(shopify_instance_id, endpoint='products.json')
             access_token = shopify_instance_id.shopify_shared_secret
             headers = {
@@ -306,18 +308,20 @@ class ProductTemplateSplitColor(models.Model):
                         break
                 else:
                     break
-            
+             _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
+             
             if all_products:
                 # Procesar los productos importados
                 products = self._process_imported_products(all_products, shopify_instance_id, skip_existing_products)
                 return products
             else:
-                _logger.info("Products not found in Shopify store")
+                _logger.info("WSSHProducts not found in Shopify store")
                 return []
 
     def _process_imported_products(self, shopify_products, shopify_instance_id, skip_existing_products):
       product_list = []
       for shopify_product in shopify_products:
+          _logger.info("WSSH Processing Shopify product ID: %s", shopify_product.get('id'))
           shopify_product_id = shopify_product.get('id')
           
           # Buscar si el producto ya existe en Odoo por shopify_product_id en product.template.attribute.value
