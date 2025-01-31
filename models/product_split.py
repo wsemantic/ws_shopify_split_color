@@ -30,7 +30,7 @@ class ProductTemplateAttributeValue(models.Model):
 class ProductTemplateSplitColor(models.Model):
     _inherit = 'product.template'
 
-    def _prepare_shopify_variant_data(self, variant, instance_id, color_value=None, is_color_split=False, is_update=False):
+    def _prepare_shopify_variant_data(self, variant, instance_id, template_attribute_value=None, is_color_split=False, is_update=False):
         """Prepara los datos de la variante para enviar a Shopify"""
         variant_data = {
             "price": str(variant.lst_price),
@@ -43,12 +43,12 @@ class ProductTemplateSplitColor(models.Model):
         if is_update and variant.shopify_variant_id:
             variant_data["id"] = variant.shopify_variant_id
 
-        if is_color_split and color_value:
+        if is_color_split and template_attribute_value:
             # Si estamos separando por colores, solo usamos el atributo talla
             size_option_key = f"option{instance_id.size_option_position}"
             color_option_key = f"option{instance_id.color_option_position}"
             
-            variant_data[color_option_key] = color_value.name if is_color_split and color_value else ""
+            variant_data[color_option_key] = template_attribute_value.name if is_color_split and template_attribute_value else ""
             size_value = variant.product_template_attribute_value_ids.filtered(lambda v: v.attribute_id.name.lower() != 'color')
             variant_data[size_option_key] = size_value.name if size_value else "Default"
         else:
@@ -98,10 +98,10 @@ class ProductTemplateSplitColor(models.Model):
                     continue
 
                 # Exportar cada color como un producto separado
-                for color_value in color_line.value_ids:
+                for template_attribute_value in color_line.product_template_value_ids:
                     # Filtrar variantes para este color
                     variants = product.product_variant_ids.filtered(
-                        lambda v: color_value in v.product_template_attribute_value_ids.mapped('product_attribute_value_id')
+                        lambda v: template_attribute_value in v.product_template_attribute_value_ids
                     )
 
                     if not variants:
@@ -109,13 +109,13 @@ class ProductTemplateSplitColor(models.Model):
 
                     # Preparar datos para Shopify
                     variant_data = [
-                        self._prepare_shopify_variant_data(variant, instance_id, color_value, True, update)
+                        self._prepare_shopify_variant_data(variant, instance_id, template_attribute_value, True, update)
                         for variant in variants
                     ]
 
                     product_data = {
                         "product": {
-                            "title": f"{product.name} - {color_value.name}",
+                            "title": f"{product.name} - {template_attribute_value.name}",
                             "body_html": product.description or "",
                             "options": [
                                 {
@@ -134,11 +134,11 @@ class ProductTemplateSplitColor(models.Model):
                     }
 
                     # Si el producto ya existe, solo actualizamos el producto y sus opciones
-                    if color_value.shopify_product_id and update:  # Acceso correcto al campo
-                        product_data["product"]["id"] = color_value.shopify_product_id
-                        url = self.get_products_url(instance_id, f'products/{color_value.shopify_product_id}.json')
+                    if template_attribute_value.shopify_product_id and update:  # Acceso correcto al campo
+                        product_data["product"]["id"] = template_attribute_value.shopify_product_id
+                        url = self.get_products_url(instance_id, f'products/{template_attribute_value.shopify_product_id}.json')
                         response = requests.put(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info(f"Updating Shopify product {color_value.shopify_product_id}")
+                        _logger.info(f"Updating Shopify product {template_attribute_value.shopify_product_id}")
 
                         if response.ok:
                             # Actualizar las variantes individualmente
@@ -155,7 +155,7 @@ class ProductTemplateSplitColor(models.Model):
                             shopify_product = response.json().get('product', {})
                             if shopify_product:
                                 # Guardar el ID del producto y actualizar los IDs de las variantes
-                                color_value.shopify_product_id = shopify_product.get('id')  # Asignación correcta del campo
+                                template_attribute_value.shopify_product_id = shopify_product.get('id')  # Asignación correcta del campo
                                 shopify_variants = shopify_product.get('variants', [])
                                 self._update_variant_ids(variants, shopify_variants)
 
@@ -165,7 +165,7 @@ class ProductTemplateSplitColor(models.Model):
 
                     if not response.ok:
                         _logger.error(f"Error exporting product: {response.text}")
-                        raise UserError(f"Error exporting product {product.name} - {color_value.name}: {response.text}")
+                        raise UserError(f"Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
 
             # Actualizar la fecha de la última exportación
             instance_id.last_export_product = fields.Datetime.now()
