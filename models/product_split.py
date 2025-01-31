@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 import logging
 import json
 import requests
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -303,12 +304,22 @@ class ProductTemplateSplitColor(models.Model):
                     products = shopify_products.get('products', [])
                     all_products.extend(products)
                     
-                    # Verificar si hay más páginas
-                    page_info = shopify_products.get('page_info', {})
-                    if page_info.get('has_next_page'):
-                        params['page_info'] = page_info['next_page']
-                    else:
-                        break
+                    # Verificar si hay más páginas                        
+                    link_header = response.headers.get('Link')
+                    if link_header:
+                      links = parse_link_header(link_header)
+                      if 'next' in links:
+                          next_url = links['next']
+                          # Llama a esa URL en la siguiente iteración
+                          url = next_url
+                          continue
+                      else:
+                          # No hay "next", no hay más páginas
+                          break
+    else:
+      # No hay encabezado Link => no más páginas
+      break
+      
                 else:
                     break
             _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
@@ -440,3 +451,14 @@ class ProductTemplateSplitColor(models.Model):
         _logger.info(f"WSSH Created new product template {product_template.name} from Shopify product ID {shopify_product.get('id')}.")
         
         return product_template
+
+    def parse_link_header(link_header):
+        # Busca patrones del tipo:
+        # <URL>; rel="next", <URL>; rel="previous", etc.
+        pattern = r'<([^>]+)>;\s*rel="(\w+)"'
+        matches = re.findall(pattern, link_header)
+        # matches será lista de tuplas [(url, rel), (url, rel), ...]
+        links = {}
+        for url, rel in matches:
+            links[rel] = url
+        return links
