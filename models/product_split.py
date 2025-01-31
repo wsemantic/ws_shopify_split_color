@@ -190,6 +190,8 @@ class ProductTemplateSplitColor(models.Model):
             if variant.default_code in shopify_variants_by_sku:
                 variant.shopify_variant_id = shopify_variants_by_sku[variant.default_code]['id']
                 variant.shopify_inventory_item_id = shopify_variants_by_sku[variant.default_code]['inventory_item_id']
+                variant.is_shopify_variant=True
+                variant.shopify_barcode=variant.default_code
                 _logger.info(f"WSSH Updated variant {variant.default_code} with Shopify ID {variant.shopify_variant_id} and inventory item ID {variant.shopify_inventory_item_id}")
 
     def _export_single_product(self, product, instance_id, headers, update):
