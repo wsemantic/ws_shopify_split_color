@@ -66,8 +66,13 @@ class ProductTemplateSplitColor(models.Model):
             domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
             products_to_export = self.search(domain)
 
+            product_count = len(products_to_export)
+            _logger.info("WSSH Found %d products to export for instance %s", product_count, instance_id.name)
+        
             if not products_to_export:
                 _logger.info("WSSH No products to export for instance %s", instance_id.name)
+                continue
+            else
                 continue
 
             headers = {
@@ -77,6 +82,7 @@ class ProductTemplateSplitColor(models.Model):
 
             # Iterar sobre cada producto a exportar
             for product in products_to_export:
+                _logger.info("WSSH Exporting product: %s (ID: %d)", product.name, product.id)
                 if not instance_id.split_products_by_color:
                     # Si no hay split por colores, exportar el producto normalmente
                     self._export_single_product(product, instance_id, headers, update)
