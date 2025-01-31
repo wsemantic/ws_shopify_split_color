@@ -378,6 +378,8 @@ class ProductTemplateSplitColor(models.Model):
                   _logger.info(f"WSSH Updated existing product template {existing_variant.product_tmpl_id.name} with Shopify ID {shopify_product_id}.")
                   product_list.append(existing_variant.product_tmpl_id.id)
                   break
+              else:
+                  _logger.info("WSSH No matching product found for Shopify Variant ID: %s or SKU: %s", shopify_variant_id, sku)
           else:
               # Si no se encuentra el producto ni sus variantes, crear el producto en Odoo
               if not skip_existing_products:
