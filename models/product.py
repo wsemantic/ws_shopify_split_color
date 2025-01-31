@@ -72,8 +72,6 @@ class ProductTemplateSplitColor(models.Model):
             if not products_to_export:
                 _logger.info("WSSH No products to export for instance %s", instance_id.name)
                 continue
-            else:
-                continue
 
             headers = {
                 "X-Shopify-Access-Token": instance_id.shopify_shared_secret,
