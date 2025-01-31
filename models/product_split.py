@@ -22,8 +22,8 @@ class ProductProduct(models.Model):
 
     shopify_inventory_item_id = fields.Char(string="Shopify Inventory Item ID")
     
-class ProductTmplAtLine(models.Model):
-    _inherit = 'product.template.attribute.line'
+class ProductTemplateAttributeValue(models.Model):
+    _inherit = 'product.template.attribute.value'
 
     shopify_product_id = fields.Char(string="Shopify Product ID")
     
@@ -134,11 +134,11 @@ class ProductTemplateSplitColor(models.Model):
                     }
 
                     # Si el producto ya existe, solo actualizamos el producto y sus opciones
-                    if color_line.shopify_product_id and update:
-                        product_data["product"]["id"] = color_line.shopify_product_id
-                        url = self.get_products_url(instance_id, f'products/{color_line.shopify_product_id}.json')
+                    if color_value.shopify_product_id and update:  # Acceso correcto al campo
+                        product_data["product"]["id"] = color_value.shopify_product_id
+                        url = self.get_products_url(instance_id, f'products/{color_value.shopify_product_id}.json')
                         response = requests.put(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info(f"Updating Shopify product {color_line.shopify_product_id}")
+                        _logger.info(f"Updating Shopify product {color_value.shopify_product_id}")
 
                         if response.ok:
                             # Actualizar las variantes individualmente
@@ -155,7 +155,7 @@ class ProductTemplateSplitColor(models.Model):
                             shopify_product = response.json().get('product', {})
                             if shopify_product:
                                 # Guardar el ID del producto y actualizar los IDs de las variantes
-                                color_line.shopify_product_id = shopify_product.get('id')
+                                color_value.shopify_product_id = shopify_product.get('id')  # Asignación correcta del campo
                                 shopify_variants = shopify_product.get('variants', [])
                                 self._update_variant_ids(variants, shopify_variants)
 
