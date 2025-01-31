@@ -27,7 +27,7 @@ class ProductProduct(models.Model):
 class ProductTemplateSplitColor(models.Model):
     _inherit = 'product.template'
 
-    def _prepare_shopify_variant_data(self, variant, is_color_split=False, is_update=False):
+    def _prepare_shopify_variant_data(self, variant, instance_id, is_color_split=False, is_update=False):
         """Prepara los datos de la variante para enviar a Shopify"""
         variant_data = {
             "price": str(variant.lst_price),
@@ -107,7 +107,7 @@ class ProductTemplateSplitColor(models.Model):
 
                     # Preparar datos para Shopify
                     variant_data = [
-                        self._prepare_shopify_variant_data(variant, True, update)
+                        self._prepare_shopify_variant_data(variant, instance_id, True, update)
                         for variant in variants
                     ]
 
@@ -192,7 +192,7 @@ class ProductTemplateSplitColor(models.Model):
     def _export_single_product(self, product, instance_id, headers, update):
         """Exporta un producto sin separación por colores"""
         variant_data = [
-            self._prepare_shopify_variant_data(variant, False, update)
+            self._prepare_shopify_variant_data(variant, instance_id, False, update)
             for variant in product.product_variant_ids
         ]
 
