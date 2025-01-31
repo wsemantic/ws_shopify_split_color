@@ -72,7 +72,7 @@ class ProductTemplateSplitColor(models.Model):
             if not products_to_export:
                 _logger.info("WSSH No products to export for instance %s", instance_id.name)
                 continue
-            else
+            else:
                 continue
 
             headers = {
