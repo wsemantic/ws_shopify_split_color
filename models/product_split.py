@@ -308,7 +308,7 @@ class ProductTemplateSplitColor(models.Model):
                         break
                 else:
                     break
-             _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
+            _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
              
             if all_products:
                 # Procesar los productos importados
