@@ -231,6 +231,7 @@ class ProductTemplateSplitColor(models.Model):
                     self._update_shopify_variant(variant, instance_id, headers)
         else:
             # Si es un nuevo producto, enviamos también las variantes
+            product_data["product"]["status"]='draft'
             product_data["product"]["variants"] = variant_data
             url = self.get_products_url(instance_id, 'products.json')
             response = requests.post(url, headers=headers, data=json.dumps(product_data))
