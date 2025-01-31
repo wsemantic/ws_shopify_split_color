@@ -138,7 +138,7 @@ class ProductTemplateSplitColor(models.Model):
                         product_data["product"]["id"] = template_attribute_value.shopify_product_id
                         url = self.get_products_url(instance_id, f'products/{template_attribute_value.shopify_product_id}.json')
                         response = requests.put(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info(f"Updating Shopify product {template_attribute_value.shopify_product_id}")
+                        _logger.info(f"WSSH Updating Shopify product {template_attribute_value.shopify_product_id}")
 
                         if response.ok:
                             # Actualizar las variantes individualmente
@@ -164,8 +164,8 @@ class ProductTemplateSplitColor(models.Model):
                                 product.is_exported = True
 
                     if not response.ok:
-                        _logger.error(f"Error exporting product: {response.text}")
-                        raise UserError(f"Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
+                        _logger.error(f"WSSH Error exporting product: {response.text}")
+                        raise UserError(f"WSSH Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
 
             # Actualizar la fecha de la última exportación
             instance_id.last_export_product = fields.Datetime.now()
@@ -189,7 +189,7 @@ class ProductTemplateSplitColor(models.Model):
             if variant.default_code in shopify_variants_by_sku:
                 variant.shopify_variant_id = shopify_variants_by_sku[variant.default_code]['id']
                 variant.shopify_inventory_item_id = shopify_variants_by_sku[variant.default_code]['inventory_item_id']
-                _logger.info(f"Updated variant {variant.default_code} with Shopify ID {variant.shopify_variant_id} and inventory item ID {variant.shopify_inventory_item_id}")
+                _logger.info(f"WSSH Updated variant {variant.default_code} with Shopify ID {variant.shopify_variant_id} and inventory item ID {variant.shopify_inventory_item_id}")
 
     def _export_single_product(self, product, instance_id, headers, update):
         """Exporta un producto sin separación por colores"""
@@ -245,10 +245,10 @@ class ProductTemplateSplitColor(models.Model):
                 product.is_shopify_product = True
                 product.shopify_instance_id = instance_id.id
                 product.is_exported = True
-                _logger.info(f"Successfully exported product {product.name}")
+                _logger.info(f"WSSH Successfully exported product {product.name}")
         else:
-            _logger.error(f"Error exporting product: {response.text}")
-            raise UserError(f"Error exporting product {product.name}: {response.text}")
+            _logger.error(f"WSSH Error exporting product: {response.text}")
+            raise UserError(f"WSSH Error exporting product {product.name}: {response.text}")
 
     def get_products_url(self, instance_id, endpoint):
         shop_url = "https://{}.myshopify.com/admin/api/{}/{}".format(instance_id.shopify_host,
@@ -262,7 +262,171 @@ class ProductTemplateSplitColor(models.Model):
         response = requests.put(url, headers=headers, data=json.dumps({"variant": variant_data}))
         
         if response.ok:
-            _logger.info(f"Successfully updated variant {variant.default_code} in Shopify")
+            _logger.info(f"WSSH Successfully updated variant {variant.default_code} in Shopify")
         else:
-            _logger.error(f"Error updating variant {variant.default_code}: {response.text}")
-            raise UserError(f"Error updating variant {variant.default_code}: {response.text}")
+            _logger.error(f"WSSH Error updating variant {variant.default_code}: {response.text}")
+            raise UserError(f"WSSH Error updating variant {variant.default_code}: {response.text}")
+            
+    def import_shopify_products(self, shopify_instance_ids, skip_existing_products, from_date, to_date):
+        if not shopify_instance_ids:
+            shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
+        
+        for shopify_instance_id in shopify_instance_ids:
+            url = self.get_products_url(shopify_instance_id, endpoint='products.json')
+            access_token = shopify_instance_id.shopify_shared_secret
+            headers = {
+                "X-Shopify-Access-Token": access_token,
+            }
+            
+            # Parámetros para la solicitud
+            params = {
+                "limit": 250,  # Ajustar el tamaño de la página según sea necesario
+                "page_info": None,
+            }
+            
+            if from_date and to_date:
+                params.update({
+                    "created_at_min": from_date,
+                    "created_at_max": to_date,
+                })
+            
+            all_products = []
+            while True:
+                response = requests.get(url, headers=headers, params=params)
+                if response.status_code == 200 and response.content:
+                    shopify_products = response.json()
+                    products = shopify_products.get('products', [])
+                    all_products.extend(products)
+                    
+                    # Verificar si hay más páginas
+                    page_info = shopify_products.get('page_info', {})
+                    if page_info.get('has_next_page'):
+                        params['page_info'] = page_info['next_page']
+                    else:
+                        break
+                else:
+                    break
+            
+            if all_products:
+                # Procesar los productos importados
+                products = self._process_imported_products(all_products, shopify_instance_id, skip_existing_products)
+                return products
+            else:
+                _logger.info("Products not found in Shopify store")
+                return []
+
+    def _process_imported_products(self, shopify_products, shopify_instance_id, skip_existing_products):
+      product_list = []
+      for shopify_product in shopify_products:
+          shopify_product_id = shopify_product.get('id')
+          
+          # Buscar si el producto ya existe en Odoo por shopify_product_id en product.template.attribute.value
+          existing_attribute_value = self.env['product.template.attribute.value'].sudo().search([
+              ('shopify_product_id', '=', shopify_product_id),
+          ], limit=1)
+          
+          if existing_attribute_value:
+              # Si el producto ya existe, no hacer nada
+              _logger.info(f"WSSH Product with Shopify ID {shopify_product_id} already exists in Odoo.")
+              product_list.append(existing_attribute_value.product_tmpl_id.id)
+              continue
+          
+          # Si no existe, buscar por las variantes (shopify_variant_id o default_code)
+          for variant in shopify_product.get('variants', []):
+              shopify_variant_id = variant.get('id')
+              sku = variant.get('sku')
+              
+              # Buscar por shopify_variant_id o default_code (SKU)
+              existing_variant = self.env['product.product'].sudo().search([
+                  '|',
+                  ('shopify_variant_id', '=', shopify_variant_id),
+                  ('default_code', '=', sku),
+                  ('shopify_instance_id', '=', shopify_instance_id.id),
+              ], limit=1)
+              
+              if existing_variant:
+                  # Si se encuentra una variante, actualizar el valor de atributo de tipo "color"
+                  for attribute_line in existing_variant.attribute_line_ids:
+                      for template_value in attribute_line.product_template_value_ids:
+                          if template_value.attribute_id.name.lower() == 'color':
+                              template_value.write({
+                                  'shopify_product_id': shopify_product_id,
+                              })
+                              _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}.")
+                              break
+                  
+                  # Actualizar el shopify_variant_id si no estaba asignado
+                  if not existing_variant.shopify_variant_id:
+                      existing_variant.write({
+                          'shopify_variant_id': shopify_variant_id,
+                      })
+                  
+                  # Marcar el producto como exportado
+                  existing_variant.product_tmpl_id.write({
+                      'is_shopify_product': True,
+                      'shopify_instance_id': shopify_instance_id.id,
+                      'is_exported': True,
+                  })
+                  
+                  _logger.info(f"WSSH Updated existing product template {existing_variant.product_tmpl_id.name} with Shopify ID {shopify_product_id}.")
+                  product_list.append(existing_variant.product_tmpl_id.id)
+                  break
+          else:
+              # Si no se encuentra el producto ni sus variantes, crear el producto en Odoo
+              if not skip_existing_products:
+                  _logger.info(f"WSSH Creando producto ")
+                  #product_template = self._create_product_from_shopify(shopify_product, shopify_instance_id)
+                  #if product_template:
+                  #    product_list.append(product_template.id)
+      
+      return product_list
+
+    def _create_product_from_shopify(self, shopify_product, shopify_instance_id):
+        """Crea un producto en Odoo a partir de un producto de Shopify."""
+        tags = shopify_product.get('tags')
+        tag_list = []
+        if tags:
+            tags = tags.split(',')
+            for tag in tags:
+                tag_id = self.env['product.tag'].sudo().search([('name', '=', tag)], limit=1)
+                if not tag_id:
+                    tag_id = self.env['product.tag'].sudo().create({'name': tag})
+                    tag_list.append(tag_id.id)
+                else:
+                    tag_list.append(tag_id.id)
+        
+        description = False
+        if shopify_product.get('body_html'):
+            soup = BeautifulSoup(shopify_product.get('body_html'), 'html.parser')
+            description_converted_to_text = soup.get_text()
+            description = description_converted_to_text
+        
+        product_vals = {
+            'name': shopify_product.get('title'),
+            'is_shopify_product': True,
+            "detailed_type": "product",
+            'shopify_instance_id': shopify_instance_id.id,
+            'default_code': shopify_product.get('sku') if shopify_product.get('sku') else '',
+            'barcode': shopify_product.get('barcode') if shopify_product.get('barcode') else '',
+            'shopify_barcode': shopify_product.get('barcode') if shopify_product.get('barcode') else '',
+            'shopify_sku': shopify_product.get('sku') if shopify_product.get('sku') else '',
+            'description_sale': description if description else False,
+            'description': shopify_product.get('body_html') if shopify_product.get('body_html') else False,
+            'taxes_id': [(6, 0, [])],
+            'product_tag_ids': [(6, 0, tag_list)],
+        }
+        
+        # Crear el producto en Odoo
+        product_template = self.env['product.template'].sudo().create(product_vals)
+        
+        # Asignar el shopify_product_id a las líneas de atributos
+        for attribute_line in product_template.attribute_line_ids:
+            for attribute_value in attribute_line.product_template_value_ids:
+                if attribute_value.attribute_id.name.lower() == 'color':
+                    attribute_value.write({
+                        'shopify_product_id': shopify_product.get('id'),
+                    })
+        
+        _logger.info(f"WSSH Created new product template {product_template.name} from Shopify product ID {shopify_product.get('id')}.")
+        
+        return product_template
