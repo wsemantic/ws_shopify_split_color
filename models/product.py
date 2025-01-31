@@ -12,8 +12,8 @@ _logger = logging.getLogger(__name__)
 class ShopifyInstance(models.Model):
     _inherit = 'shopify.instance'
 
-    last_export_date = fields.Datetime(string="Última exportación de productos")
-    last_stock_update = fields.Datetime(string="Última actualización de stock")
+    last_export_product = fields.Datetime(string="Última exportación de productos")
+    last_export_stock = fields.Datetime(string="Última actualización de stock")
     split_products_by_color = fields.Boolean(string="Split Products by Color", default=False)
     color_option_position = fields.Integer(string="Color Option Position", default=1, help="Define en qué opción de Shopify se mapeará el color (por defecto, en la opción 1).")
     size_option_position = fields.Integer(string="Size Option Position", default=2, help="Define en qué opción de Shopify se mapeará la talla (por defecto, en la opción 2).")
@@ -63,7 +63,7 @@ class ProductTemplateSplitColor(models.Model):
         """
         for instance_id in shopify_instance_ids:
             # Filtrar productos modificados desde la última exportación
-            domain = [('write_date', '>', instance_id.last_export_date)] if instance_id.last_export_date else []
+            domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
             products_to_export = self.search(domain)
 
             if not products_to_export:
@@ -162,7 +162,7 @@ class ProductTemplateSplitColor(models.Model):
                         raise UserError(f"Error exporting product {product.name} - {color_value.name}: {response.text}")
 
             # Actualizar la fecha de la última exportación
-            instance_id.last_export_date = fields.Datetime.now()
+            instance_id.last_export_product = fields.Datetime.now()
 
     def _update_variant_ids(self, odoo_variants, shopify_variants):
         """
