@@ -346,9 +346,10 @@ class ProductTemplateSplitColor(models.Model):
               # Buscar por shopify_variant_id o default_code (SKU)
               existing_variant = self.env['product.product'].sudo().search([
                   '|',
+                  '&',  # AND para shopify_variant_id y shopify_instance_id
                   ('shopify_variant_id', '=', shopify_variant_id),
-                  ('default_code', '=', sku),
                   ('shopify_instance_id', '=', shopify_instance_id.id),
+                  ('default_code', '=', sku),  # OR para default_code
               ], limit=1)
               
               if existing_variant:
