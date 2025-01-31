@@ -22,6 +22,11 @@ class ProductProduct(models.Model):
 
     shopify_inventory_item_id = fields.Char(string="Shopify Inventory Item ID")
     
+class ProductTmplAtLine(models.Model):
+    _inherit = 'product.template.attribute.line'
+
+    shopify_product_id = fields.Char(string="Shopify Product ID")
+    
 class ProductTemplateSplitColor(models.Model):
     _inherit = 'product.template'
 
