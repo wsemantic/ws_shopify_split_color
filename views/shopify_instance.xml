@@ -3,7 +3,7 @@
     <record id="view_shopify_instance_form_split" model="ir.ui.view">
         <field name="name">shopify.instance.form.ws_shopify_split_color</field>
         <field name="model">shopify.instance</field>
-        <field name="inherit_id" ref="shopify_instance_form_view"/>
+        <field name="inherit_id" ref="pragtech_odoo_shopify_connector.shopify_instance_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Export Details">
