@@ -149,6 +149,7 @@ class ProductTemplateSplitColor(models.Model):
                     else:
                         # Si es un nuevo producto, enviamos también las variantes
                         product_data["product"]["variants"] = variant_data
+                        product_data["product"]["status"]='draft'
                         url = self.get_products_url(instance_id, 'products.json')
                         response = requests.post(url, headers=headers, data=json.dumps(product_data))
                         _logger.info("WSSHCreating new Shopify product")
@@ -287,7 +288,7 @@ class ProductTemplateSplitColor(models.Model):
             # Parámetros para la solicitud
             params = {
                 "limit": 250,  # Ajustar el tamaño de la página según sea necesario
-                "order": "id desc",
+                "order": "id asc",
                 "page_info": None,
             }
             
@@ -317,7 +318,7 @@ class ProductTemplateSplitColor(models.Model):
                             # Llama a esa URL en la siguiente iteración
                             url = next_url
                             params = None
-                            _logger.info(f"WSSH Next URL {next_url}")
+                            
                             continue
                         else:
                             # No hay "next", no hay más páginas
