@@ -450,7 +450,7 @@ class ProductTemplateSplitColor(models.Model):
         
         return product_template
 
-    def _parse_link_header(link_header):
+    def _parse_link_header(self,link_header):
         # Busca patrones del tipo:
         # <URL>; rel="next", <URL>; rel="previous", etc.
         pattern = r'<([^>]+)>;\s*rel="(\w+)"'
