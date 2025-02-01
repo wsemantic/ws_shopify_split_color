@@ -310,6 +310,7 @@ class ProductTemplateSplitColor(models.Model):
                     link_header = response.headers.get('Link')
                     if link_header:
                         links = self._parse_link_header(link_header)
+                        _logger.info("WSSH link_header: %s", link_header)
                         if 'next' in links:
                             next_url = links['next']
                             # Llama a esa URL en la siguiente iteración
