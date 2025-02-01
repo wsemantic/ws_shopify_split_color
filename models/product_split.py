@@ -151,8 +151,6 @@ class ProductTemplateSplitColor(models.Model):
                         product_data["product"]["variants"] = variant_data
                         url = self.get_products_url(instance_id, 'products.json')
                         response = requests.post(url, headers=headers, data=json.dumps(product_data))
-                        response_json = response.json()
-                        _logger.info("Shopify POST response JSON: %s", response_json)
                         _logger.info("WSSHCreating new Shopify product")
 
                         if response.ok:
@@ -301,6 +299,9 @@ class ProductTemplateSplitColor(models.Model):
             all_products = []
             while True:
                 response = requests.get(url, headers=headers, params=params)
+                response_json = response.json()
+                _logger.info("WSSH Shopify POST response JSON: %s", response_json)
+                return []
                 if response.status_code == 200 and response.content:
                     shopify_products = response.json()
                     products = shopify_products.get('products', [])
