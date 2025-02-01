@@ -287,6 +287,7 @@ class ProductTemplateSplitColor(models.Model):
             # Parámetros para la solicitud
             params = {
                 "limit": 250,  # Ajustar el tamaño de la página según sea necesario
+                "order": "id asc",
                 "page_info": None,
             }
             
