@@ -309,7 +309,7 @@ class ProductTemplateSplitColor(models.Model):
                     # Verificar si hay más páginas                        
                     link_header = response.headers.get('Link')
                     if link_header:
-                        links = parse_link_header(link_header)
+                        links = self._parse_link_header(link_header)
                         if 'next' in links:
                             next_url = links['next']
                             # Llama a esa URL en la siguiente iteración
@@ -450,7 +450,7 @@ class ProductTemplateSplitColor(models.Model):
         
         return product_template
 
-    def parse_link_header(link_header):
+    def _parse_link_header(link_header):
         # Busca patrones del tipo:
         # <URL>; rel="next", <URL>; rel="previous", etc.
         pattern = r'<([^>]+)>;\s*rel="(\w+)"'
