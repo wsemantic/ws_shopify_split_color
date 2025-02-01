@@ -377,11 +377,7 @@ class ProductTemplateSplitColor(models.Model):
                               _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}.")
                               break
                   
-                  # Actualizar el shopify_variant_id si no estaba asignado
-                  if not existing_variant.shopify_variant_id:
-                      existing_variant.write({
-                          'shopify_variant_id': shopify_variant_id,
-                      })
+                  self._update_variant_ids([existing_variant], [variant])                  
                   
                   # Marcar el producto como exportado
                   existing_variant.product_tmpl_id.write({
@@ -389,6 +385,7 @@ class ProductTemplateSplitColor(models.Model):
                       'shopify_instance_id': shopify_instance_id.id,
                       'is_exported': True,
                   })
+
                   
                   _logger.info(f"WSSH Updated existing product template {existing_variant.product_tmpl_id.name} with Shopify ID {shopify_product_id}.")
                   product_list.append(existing_variant.product_tmpl_id.id)
