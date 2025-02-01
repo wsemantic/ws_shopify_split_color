@@ -286,7 +286,7 @@ class ProductTemplateSplitColor(models.Model):
             
             # Parámetros para la solicitud
             params = {
-                "limit": 2,  # Ajustar el tamaño de la página según sea necesario
+                "limit": 250,  # Ajustar el tamaño de la página según sea necesario
                 "page_info": None,
             }
             
@@ -299,8 +299,7 @@ class ProductTemplateSplitColor(models.Model):
             all_products = []
             while True:
                 response = requests.get(url, headers=headers, params=params)
-                response_json = response.json()
-                _logger.info("WSSH Shopify POST response JSON: %s", json.dumps(response_json, indent=4))
+                #_logger.info("WSSH Shopify POST response JSON: %s", json.dumps(response.json(), indent=4))
                 
                 return []
                 if response.status_code == 200 and response.content:
