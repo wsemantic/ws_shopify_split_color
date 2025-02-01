@@ -314,6 +314,7 @@ class ProductTemplateSplitColor(models.Model):
                             next_url = links['next']
                             # Llama a esa URL en la siguiente iteración
                             url = next_url
+                            _logger.info(f""WSSH Next URL {next_url}")
                             continue
                         else:
                             # No hay "next", no hay más páginas
