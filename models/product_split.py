@@ -307,19 +307,18 @@ class ProductTemplateSplitColor(models.Model):
                     # Verificar si hay más páginas                        
                     link_header = response.headers.get('Link')
                     if link_header:
-                      links = parse_link_header(link_header)
-                      if 'next' in links:
-                          next_url = links['next']
-                          # Llama a esa URL en la siguiente iteración
-                          url = next_url
-                          continue
-                      else:
-                          # No hay "next", no hay más páginas
-                          break
-    else:
-      # No hay encabezado Link => no más páginas
-      break
-      
+                        links = parse_link_header(link_header)
+                        if 'next' in links:
+                            next_url = links['next']
+                            # Llama a esa URL en la siguiente iteración
+                            url = next_url
+                            continue
+                        else:
+                            # No hay "next", no hay más páginas
+                            break
+                    else:
+                        # No hay encabezado Link => no más páginas
+                        break
                 else:
                     break
             _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
