@@ -301,6 +301,7 @@ class ProductTemplateSplitColor(models.Model):
                 response = requests.get(url, headers=headers, params=params)
                 response_json = response.json()
                 _logger.info("WSSH Shopify POST response JSON: %s", response_json)
+                
                 return []
                 if response.status_code == 200 and response.content:
                     shopify_products = response.json()
