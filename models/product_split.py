@@ -305,7 +305,7 @@ class ProductTemplateSplitColor(models.Model):
                     shopify_products = response.json()
                     products = shopify_products.get('products', [])
                     all_products.extend(products)
-                    
+                    _logger.info("WSSH All products fetched : %d", len(all_products))
                     # Verificar si hay más páginas                        
                     link_header = response.headers.get('Link')
                     if link_header:
