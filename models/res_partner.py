@@ -30,7 +30,7 @@ class ResPartner(models.Model):
         _logger.info("WSSH Inport customer %i ",len(shopify_instance_ids))
         for shopify_instance_id in shopify_instance_ids:
             # Construir la URL para obtener clientes
-            _logger.info("WSSH dentro instance %i ",shopify_instance_ids.name)
+            _logger.info("WSSH dentro instance %s ",shopify_instance_id.name)
             url = self.get_customer_url(shopify_instance_id, endpoint='customers.json')
             access_token = shopify_instance_id.shopify_shared_secret
             headers = {
@@ -48,10 +48,12 @@ class ResPartner(models.Model):
             all_customers = []
             while True:
                 response = requests.get(url, headers=headers, params=params)
+                _logger.info("WSSH iteracion response")
                 if response.status_code == 200 and response.content:
                     shopify_customers = response.json()
                     customers = shopify_customers.get('customers', [])
                     all_customers.extend(customers)
+                    _logger.info(f"WSSH iteracion response n {len(all_customers)}")
                     # Manejo de paginación: suponemos que en tu respuesta se usa page_info.
                     page_info = shopify_customers.get('page_info', {})
                     if 'has_next_page' in page_info and page_info['has_next_page']:
