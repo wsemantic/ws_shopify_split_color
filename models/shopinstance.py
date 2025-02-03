@@ -1,6 +1,6 @@
 import json
 
-import requests
+import requests,re
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
