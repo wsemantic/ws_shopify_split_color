@@ -94,6 +94,7 @@ class ResPartner(models.Model):
                 # Si se requiere actualizar los datos, se pueden incluir aquí:
                 partner.write({
                     'shopify_customer_id': shopify_customer.get('id'),
+                    'is_shopify_customer': True
                     # Puedes actualizar otros campos que consideres necesarios
                 })
             else:
@@ -105,7 +106,8 @@ class ResPartner(models.Model):
                     'email': shopify_customer.get('email'),
                     'vat': shopify_customer.get('vat'),
                     'shopify_customer_id': shopify_customer.get('id'),
-                    'ref':'SID'+ str(shopify_customer.get('id'))
+                    'ref':'SID'+ str(shopify_customer.get('id')),
+                    'is_shopify_customer': True
                     
                     # Mapea aquí otros campos que necesites importar
                 }
