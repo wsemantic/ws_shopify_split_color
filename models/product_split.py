@@ -283,7 +283,7 @@ class ProductTemplateSplitColor(models.Model):
                 "limit": 250,  # Ajustar el tamaño de la página según sea necesario
                 "order": "id asc",
                 "page_info": None,
-                "ids": "9972972323162,9972972323162", 
+                "ids": "9972972323162", 
             }
             
             if from_date and to_date:
@@ -341,13 +341,11 @@ class ProductTemplateSplitColor(models.Model):
           for variant in shopify_product.get('variants', []):
               shopify_variant_id = variant.get('id')
               sku = variant.get('sku')
-              
+              _logger.info(f"WSSH iterando varian {sku}")
               # Buscar por shopify_variant_id o default_code (SKU)
               existing_variant = self.env['product.product'].sudo().search([
                   '|',
-                  '&',  # AND para shopify_variant_id y shopify_instance_id
                   ('shopify_variant_id', '=', shopify_variant_id),
-                  ('shopify_instance_id', '=', shopify_instance_id.id),
                   ('default_code', '=', sku),  # OR para default_code
               ], limit=1)
               
@@ -370,7 +368,6 @@ class ProductTemplateSplitColor(models.Model):
                       'shopify_instance_id': shopify_instance_id.id,
                       'is_exported': True,
                   })
-
                   
                   _logger.info(f"WSSH Updated existing product template {existing_variant.product_tmpl_id.name} with Shopify ID {shopify_product_id}.")
                   product_list.append(existing_variant.product_tmpl_id.id)
