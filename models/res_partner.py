@@ -113,7 +113,7 @@ class ResPartner(models.Model):
                 }
                 # Llama al método original para crear el partner
                 partner = super(ResPartner, self).create(vals)
-            customer_list.append(customer.id)
+            customer_list.append(partner.id)
         return customer_list
 
     def _find_existing_partner(self, shopify_customer):
