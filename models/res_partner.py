@@ -107,7 +107,7 @@ class ResPartner(models.Model):
                     'vat': shopify_customer.get('vat'),
                     'shopify_customer_id': shopify_customer.get('id'),
                     'ref':'SID'+ str(shopify_customer.get('id')),
-                    'is_shopify_customer': True
+                    'is_shopify_customer': True,
                     'phone': shopify_customer.get('phone'),
                     'shopify_instance_id': shopify_instance_id.id,
                     'shopify_note': shopify_customer.get('note'),
