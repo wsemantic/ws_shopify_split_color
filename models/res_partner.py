@@ -58,9 +58,7 @@ class ResPartner(models.Model):
                             url = links['next']
                             params = None
                             continue
-                break  # No hay siguiente página
-                else:
-                    break
+                break
             _logger.info("WSSH Found %d customer to export for instance %s", len(all_customers), shopify_instance_id.name)
             
             if all_customers:
