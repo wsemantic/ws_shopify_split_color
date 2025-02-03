@@ -85,14 +85,15 @@ class ResPartner(models.Model):
         :param skip_existing_customer: Flag para omitir actualización si ya existe.
         :return: recordset de res.partner creados o actualizados.
         """
+
         Customer = self.env['res.partner']
-        new_customers = Customer.browse()
+        customer_list = []
 
         for shopify_customer in shopify_customers:            
             partner = self._find_existing_partner(shopify_customer)
             
             if partner:
-                _logger.info(f"WSSH Partner existente encontrado {partner.name}")
+                _logger.info(f"WSSH Partner existente encontrado {partner.name} id {shopify_customer.get('id')}")
                 # Si se requiere actualizar los datos, se pueden incluir aquí:
                 partner.write({
                     'shopify_customer_id': shopify_customer.get('id'),
@@ -113,8 +114,8 @@ class ResPartner(models.Model):
                 }
                 # Llama al método original para crear el partner
                 partner = super(ResPartner, self).create(vals)
-            new_customers |= partner
-        return new_customers
+            customer_list.append(customer.id)
+        return customer_list
 
     def _find_existing_partner(self, shopify_customer):
         """
