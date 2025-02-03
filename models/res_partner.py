@@ -63,7 +63,7 @@ class ResPartner(models.Model):
             if all_customers:
                 # Aquí usamos super() para delegar en la implementación original de create_customers
                 # y evitar reescribir toda la lógica de creación/actualización de clientes.
-                return super(ShopifyConnector, self).create_customers(all_customers, shopify_instance_id, skip_existing_customer)
+                return super(ResPartner, self).create_customers(all_customers, shopify_instance_id, skip_existing_customer)
             else:
                 _logger.info("Customers not found in shopify store")
                 return []
@@ -175,7 +175,7 @@ class ResPartner(models.Model):
             self = self.with_context(active_ids=partner_ids.ids)
 
         # Llamamos al método original (del conector) para que realice la exportación de clientes
-        result = super(ShopifyConnector, self).export_customers_to_shopify(shopify_instance_ids, update)
+        result = super(ResPartner, self).export_customers_to_shopify(shopify_instance_ids, update)
 
         # Opcional: actualizar la fecha de exportación de clientes en cada instancia,
         # por ejemplo, al finalizar la exportación.
