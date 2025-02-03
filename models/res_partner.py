@@ -62,7 +62,7 @@ class ResPartner(models.Model):
                         break
                 else:
                     break
-            _logger.info("WSSH Found %d customer to export for instance %s", all_customers, shopify_instance_id.name)
+            _logger.info("WSSH Found %d customer to export for instance %s", len(all_customers), shopify_instance_id.name)
             
             if all_customers:
                 # Aquí usamos super() para delegar en la implementación original de create_customers
