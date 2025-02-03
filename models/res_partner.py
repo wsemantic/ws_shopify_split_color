@@ -8,10 +8,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-class ShopifyInstance(models.Model):
-    _inherit = 'shopify.instance'
-
-    last_export_customer = fields.Datetime(string="Última exportación de clientes")
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
@@ -47,19 +43,22 @@ class ResPartner(models.Model):
 
             all_customers = []
             while True:
-                response = requests.get(url, headers=headers, params=params)
                 _logger.info("WSSH iteracion response")
+                response = requests.get(url, headers=headers, params=params)
                 if response.status_code == 200 and response.content:
                     shopify_customers = response.json()
                     customers = shopify_customers.get('customers', [])
                     all_customers.extend(customers)
                     _logger.info(f"WSSH iteracion response n {len(all_customers)}")
                     # Manejo de paginación: suponemos que en tu respuesta se usa page_info.
-                    page_info = shopify_customers.get('page_info', {})
-                    if 'has_next_page' in page_info and page_info['has_next_page']:
-                        params['page_info'] = page_info['next_page']
-                    else:
-                        break
+                    link_header = response.headers.get('Link')
+                    if link_header:
+                        links = shopify_instance._parse_link_header(link_header)
+                        if 'next' in links:
+                            url = links['next']
+                            params = None
+                            continue
+                break  # No hay siguiente página
                 else:
                     break
             _logger.info("WSSH Found %d customer to export for instance %s", len(all_customers), shopify_instance_id.name)

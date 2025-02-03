@@ -8,15 +8,6 @@ import re
 
 _logger = logging.getLogger(__name__)
 
-class ShopifyInstance(models.Model):
-    _inherit = 'shopify.instance'
-
-    last_export_product = fields.Datetime(string="Última exportación de productos")
-    last_export_stock = fields.Datetime(string="Última actualización de stock")
-    split_products_by_color = fields.Boolean(string="Split Products by Color", default=False)
-    color_option_position = fields.Integer(string="Color Option Position", default=1, help="Define en qué opción de Shopify se mapeará el color (por defecto, en la opción 1).")
-    size_option_position = fields.Integer(string="Size Option Position", default=2, help="Define en qué opción de Shopify se mapeará la talla (por defecto, en la opción 2).")
-
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
@@ -302,9 +293,8 @@ class ProductTemplateSplitColor(models.Model):
             
             all_products = []
             while True:
-                response = requests.get(url, headers=headers, params=params)
                 #_logger.info("WSSH Shopify POST response JSON: %s", json.dumps(response.json(), indent=4))
-                
+                response = requests.get(url, headers=headers, params=params)                
                 if response.status_code == 200 and response.content:
                     shopify_products = response.json()
                     products = shopify_products.get('products', [])
@@ -313,23 +303,12 @@ class ProductTemplateSplitColor(models.Model):
                     # Verificar si hay más páginas                        
                     link_header = response.headers.get('Link')
                     if link_header:
-                        links = self._parse_link_header(link_header)
-                        _logger.info("WSSH link_header: %s", link_header)
+                        links = shopify_instance._parse_link_header(link_header)
                         if 'next' in links:
-                            next_url = links['next']
-                            # Llama a esa URL en la siguiente iteración
-                            url = next_url
-                            params = None
-                            
+                            url = links['next']
+                            params = None                            
                             continue
-                        else:
-                            # No hay "next", no hay más páginas
-                            break
-                    else:
-                        # No hay encabezado Link => no más páginas
-                        break
-                else:
-                    break
+                break              
             _logger.info("WSSH Total products fetched from Shopify: %d", len(all_products))
              
             if all_products:
@@ -456,14 +435,3 @@ class ProductTemplateSplitColor(models.Model):
         _logger.info(f"WSSH Created new product template {product_template.name} from Shopify product ID {shopify_product.get('id')}.")
         
         return product_template
-
-    def _parse_link_header(self,link_header):
-        # Busca patrones del tipo:
-        # <URL>; rel="next", <URL>; rel="previous", etc.
-        pattern = r'<([^>]+)>;\s*rel="(\w+)"'
-        matches = re.findall(pattern, link_header)
-        # matches será lista de tuplas [(url, rel), (url, rel), ...]
-        links = {}
-        for url, rel in matches:
-            links[rel] = url
-        return links
