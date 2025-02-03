@@ -86,7 +86,19 @@ class ResPartner(models.Model):
         Customer = self.env['res.partner']
         customer_list = []
 
-        for shopify_customer in shopify_customers:            
+        for shopify_customer in shopify_customers:      
+            address = shopify_customer.get('addresses')
+            street = street2 = city = zip = ""
+            country_id = False
+            if address:
+                street = address[0].get('address1') if address[0].get('address1') else ""
+                street2 = address[0].get('address2') if address[0].get('address2') else ""
+                city = address[0].get('city') if address[0].get('city') else ""
+                zip = address[0].get('zip') if address[0].get('zip') else ""
+                country_code = address[0].get('country_code')
+                country_id = self.env['res.country'].sudo().search(
+                    [('code', '=', country_code)], limit=1)
+                    
             partner = self._find_existing_partner(shopify_customer)
             
             if partner:
