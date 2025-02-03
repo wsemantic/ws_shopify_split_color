@@ -108,8 +108,15 @@ class ResPartner(models.Model):
                     'shopify_customer_id': shopify_customer.get('id'),
                     'ref':'SID'+ str(shopify_customer.get('id')),
                     'is_shopify_customer': True
-                    
-                    # Mapea aquí otros campos que necesites importar
+                    'phone': shopify_customer.get('phone'),
+                    'shopify_instance_id': shopify_instance_id.id,
+                    'shopify_note': shopify_customer.get('note'),
+                    'street':street,
+                    'street2':street2,
+                    'city':city,
+                    'zip':zip,
+                    'country_id':country_id.id if country_id else False
+
                 }
                 # Llama al método original para crear el partner
                 partner = super(ResPartner, self).create(vals)

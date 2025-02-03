@@ -283,6 +283,7 @@ class ProductTemplateSplitColor(models.Model):
                 "limit": 250,  # Ajustar el tamaño de la página según sea necesario
                 "order": "id asc",
                 "page_info": None,
+                "ids": "9972996178266", 
             }
             
             if from_date and to_date:
