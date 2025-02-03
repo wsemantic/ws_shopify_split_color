@@ -303,7 +303,7 @@ class ProductTemplateSplitColor(models.Model):
                     # Verificar si hay más páginas                        
                     link_header = response.headers.get('Link')
                     if link_header:
-                        links = shopify_instance._parse_link_header(link_header)
+                        links = shopify_instance_id._parse_link_header(link_header)
                         if 'next' in links:
                             url = links['next']
                             params = None                            
