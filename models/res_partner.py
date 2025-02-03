@@ -17,6 +17,7 @@ class ResPartner(models.Model):
         usando el campo shopify_last_date_customer_import, si está definido.
         Luego, delega la creación/actualización de clientes a la implementación original.
         """
+        _logger.info("WSSH Inport customer")
         # Si no se especifican instancias, se buscan las activas.
         if not shopify_instance_ids:
             shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
@@ -52,7 +53,8 @@ class ResPartner(models.Model):
                         break
                 else:
                     break
-
+            _logger.info("WSSH Found %d customer to export for instance %s", all_customers, shopify_instance_id.name)
+            
             if all_customers:
                 # Aquí usamos super() para delegar en la implementación original de create_customers
                 # y evitar reescribir toda la lógica de creación/actualización de clientes.
