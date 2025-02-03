@@ -68,6 +68,8 @@ class ProductTemplateSplitColor(models.Model):
             _logger.info("WSSH Starting product export for instance %s", instance_id.name)                                                                              
             # Filtrar productos modificados desde la última exportación
             domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
+            # Aquí agregamos la condición para "campo_no_nulo = True"
+            domain.append(('is_published', '=', True))
             products_to_export = self.search(domain)
 
             product_count = len(products_to_export)
