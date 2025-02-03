@@ -22,13 +22,15 @@ class ResPartner(models.Model):
         usando el campo shopify_last_date_customer_import, si está definido.
         Luego, delega la creación/actualización de clientes a la implementación original.
         """
-        _logger.info("WSSH Inport customer")
+        
         # Si no se especifican instancias, se buscan las activas.
         if not shopify_instance_ids:
             shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
 
+        _logger.info("WSSH Inport customer %i ",len(shopify_instance_ids))
         for shopify_instance_id in shopify_instance_ids:
             # Construir la URL para obtener clientes
+            _logger.info("WSSH dentro instance %i ",shopify_instance_ids.name)
             url = self.get_customer_url(shopify_instance_id, endpoint='customers.json')
             access_token = shopify_instance_id.shopify_shared_secret
             headers = {
