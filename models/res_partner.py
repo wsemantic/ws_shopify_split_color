@@ -67,7 +67,7 @@ class ResPartner(models.Model):
             if all_customers:
                 # Aquí usamos super() para delegar en la implementación original de create_customers
                 # y evitar reescribir toda la lógica de creación/actualización de clientes.
-                return super(ResPartner, self).create_customers(all_customers, shopify_instance_id, skip_existing_customer)
+                return self.create_customers(all_customers, shopify_instance_id, skip_existing_customer)
             else:
                 _logger.info("Customers not found in shopify store")
                 return []
@@ -88,19 +88,22 @@ class ResPartner(models.Model):
         Customer = self.env['res.partner']
         new_customers = Customer.browse()
 
-        for shopify_customer in shopify_customers:
+        for shopify_customer in shopify_customers:            
             partner = self._find_existing_partner(shopify_customer)
+            
             if partner:
-                _logger.info("Partner existente encontrado para Shopify customer %s", shopify_customer.get('id'))
+                _logger.info(f"WSSH Partner existente encontrado {partner.name}")
                 # Si se requiere actualizar los datos, se pueden incluir aquí:
                 partner.write({
                     'shopify_customer_id': shopify_customer.get('id'),
                     # Puedes actualizar otros campos que consideres necesarios
                 })
             else:
+                name=((shopify_customer.get('first_name') or '') + ' ' + (shopify_customer.get('last_name') or '')).strip()
+                _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
                 # Prepara los valores a partir de shopify_customer
                 vals = {
-                    'name': ((shopify_customer.get('first_name') or '') + ' ' + (shopify_customer.get('last_name') or '')).strip(),
+                    'name': name,
                     'email': shopify_customer.get('email'),
                     'vat': shopify_customer.get('vat'),
                     'shopify_customer_id': shopify_customer.get('id'),
