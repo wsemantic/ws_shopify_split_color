@@ -110,7 +110,7 @@ class ResPartner(models.Model):
                     # Puedes actualizar otros campos que consideres necesarios
                 })
             else:
-                name=((shopify_customer.get('first_name') or '') + ' ' + (shopify_customer.get('last_name') or '')).strip()
+                name=((shopify_customer.get('first_name') or '') + ' ' + (shopify_customer.get('last_name') or 'email' or ('NIF'+'vat'))).strip()
                 _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
                 # Prepara los valores a partir de shopify_customer
                 vals = {
