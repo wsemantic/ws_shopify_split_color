@@ -108,7 +108,7 @@ class ResPartner(models.Model):
                 })
             else:
                 name = ((shopify_customer.get('first_name') or '') + ' ' +
-                        (shopify_customer.get('last_name'))).strip()
+                        (shopify_customer.get('last_name') or '')).strip()
                 if not (shopify_customer.get('first_name') or shopify_customer.get('last_name')):            
                     # Podemos usar el email o un texto fijo como nombre
                     name = customer.get('email') or _("Shopify Customer")
