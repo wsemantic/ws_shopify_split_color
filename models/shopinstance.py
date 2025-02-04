@@ -28,3 +28,13 @@ class ShopifyInstance(models.Model):
         for url, rel in matches:
             links[rel] = url
         return links    
+        
+    def clean_string(text):
+        """
+        Elimina los backslashes que generan secuencias de escape no deseadas,
+        excepto aquellas que formen parte de secuencias válidas (por ejemplo, \n, \t, etc.).
+        En este ejemplo, se reemplaza cualquier '\' que no esté seguido por 'n', 't', 'r' o '\' por una cadena vacía.
+        """
+        # Esta expresión regular busca un '\' que no vaya seguido de n, t, r o \
+        cleaned = re.sub(r'\\(?![ntr\\])', '', text)
+        return cleaned
