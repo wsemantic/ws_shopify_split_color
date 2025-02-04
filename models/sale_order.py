@@ -69,13 +69,28 @@ class SaleOrder(models.Model):
                     product_name = line.get('title')
                     
                 if product:
-                    subtotal = float(line.get('price')) * line.get('quantity')
+                    # Precio recibido de Shopify (incluye IVA)
+                    price_incl = float(line.get('price'))
+
+                    # Calcular la tasa total de IVA a partir de tax_lines, o definir una tasa fija
+                    tax_rate_total = 0.0
+                    for tax_line in line.get('tax_lines', []):
+                        if tax_line.get('rate'):
+                            tax_rate_total += float(tax_line.get('rate'))
+                    # En caso de que no exista información de impuestos, se puede asumir 0%
+                    if tax_rate_total:
+                        price_excl = price_incl / (1 + tax_rate_total)
+                    else:
+                        price_excl = price_incl
+
+                    subtotal = price_excl * line.get('quantity')
+
                     shopify_order_line_vals = {
                         'order_id': shopify_order_id.id,
                         'product_id': product.id,
                         'name': product_name,
                         'product_uom_qty': line.get('quantity'),
-                        'price_unit': float(line.get('price')),
+                        'price_unit': price_excl,
                         'discount': (discount / subtotal) * 100 if discount else 0.00,
                         'tax_id': [(6, 0, tax_list)]
                     }
