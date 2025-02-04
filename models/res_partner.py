@@ -55,7 +55,7 @@ class ResPartner(models.Model):
                         if 'next' in links:
                             url = links['next']
                             params = None
-                            continue
+                            #continue
                 break
             _logger.info("WSSH Found %d customer to export for instance %s", len(all_customers), shopify_instance_id.name)
             
@@ -108,7 +108,7 @@ class ResPartner(models.Model):
                 })
             else:
                 name = ((shopify_customer.get('first_name') or '') + ' ' +
-                        (shopify_customer.get('last_name') or 'email' or ('NIF' + 'vat'))).strip()
+                        (shopify_customer.get('last_name') or ('NIF' + 'vat'))).strip()
                 _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
                 # Prepara los valores a partir de shopify_customer
                 vals = {
@@ -182,7 +182,7 @@ class ResPartner(models.Model):
         """
         Valida que el email tenga un formato básico correcto.
         """
-        pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        pattern = r'^[\w\.\-\+]+@[\w\.-]+\.\w+$'
         if isinstance(email, str) and re.match(pattern, email):
             return True
         return False
