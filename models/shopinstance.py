@@ -29,7 +29,7 @@ class ShopifyInstance(models.Model):
             links[rel] = url
         return links    
         
-    def clean_string(text):
+    def clean_string(self,text):
         """
         Elimina los backslashes que generan secuencias de escape no deseadas,
         excepto aquellas que formen parte de secuencias válidas (por ejemplo, \n, \t, etc.).
