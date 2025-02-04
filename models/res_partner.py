@@ -108,7 +108,10 @@ class ResPartner(models.Model):
                 })
             else:
                 name = ((shopify_customer.get('first_name') or '') + ' ' +
-                        (shopify_customer.get('last_name') or ('NIF' + 'vat'))).strip()
+                        (shopify_customer.get('last_name'))).strip()
+                if not (shopify_customer.get('first_name') or shopify_customer.get('last_name')):            
+                    # Podemos usar el email o un texto fijo como nombre
+                    name = customer.get('email') or _("Shopify Customer")
                 _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
                 # Prepara los valores a partir de shopify_customer
                 vals = {
