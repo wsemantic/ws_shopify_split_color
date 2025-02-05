@@ -97,7 +97,7 @@ class SaleOrder(models.Model):
                     shopify_order_line_id = self.env['sale.order.line'].sudo().create(shopify_order_line_vals)
             shiplines=order.get('shipping_lines')
             if shiplines:
-                shipping = self.env['carrier_identifier'].sudo().search(
+                shipping = self.env['delivery.carrier'].sudo().search(
                     [('name', '=', shiplines.get('title'))], limit=1)
                 if not shipping:
                     delivery_product = self.env['product.product'].sudo().create({
