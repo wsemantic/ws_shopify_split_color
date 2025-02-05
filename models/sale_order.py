@@ -70,7 +70,7 @@ class SaleOrder(models.Model):
                     
                 if product:
                     # Precio recibido de Shopify (incluye IVA)
-                    price_incl = float(line.get('price'))
+                    price_incl = float(line.get('price'))-float(line.get('total_discount'))
 
                     # Calcular la tasa total de IVA a partir de tax_lines, o definir una tasa fija
                     tax_rate_total = 0.0
