@@ -222,3 +222,21 @@ class SaleOrder(models.Model):
             else:
                 _logger.info("No orders found in shopify")
                 return []        
+
+    def create_shopify_order(self, orders, shopify_instance_id, skip_existing_order, status):
+        order_list = []
+        for order in orders:
+            if status == 'open':
+                shopify_order_id = self.env['sale.order'].sudo().search([('order_shopify_id', '=', order.get('id'))],
+                                                                        limit=1)
+                if not shopify_order_id:
+                    shopify_order_id = self.prepare_shopify_order_vals(shopify_instance_id, order, skip_existing_order)
+            else:
+                shopify_order_id = self.prepare_shopify_order_vals(shopify_instance_id, order, skip_existing_order)
+            if shopify_order_id:
+                order_list.append(shopify_order_id.id)
+                shopify_order_id.name = order.get('name')
+                if status == 'open':
+                    shopify_order_id.name = order.get('name')
+
+        return order_list                
