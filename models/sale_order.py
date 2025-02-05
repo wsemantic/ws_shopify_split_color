@@ -79,7 +79,7 @@ class SaleOrder(models.Model):
                             tax_rate_total += float(tax_line.get('rate'))
                     # En caso de que no exista información de impuestos, se puede asumir 0%
                     if tax_rate_total:
-                        price_excl = price_incl / (1 + tax_rate_total)
+                        price_excl = round(price_incl / (1 + tax_rate_total),2)
                     else:
                         price_excl = price_incl
 
@@ -97,7 +97,7 @@ class SaleOrder(models.Model):
                     shopify_order_line_id = self.env['sale.order.line'].sudo().create(shopify_order_line_vals)
             
             for lineship in order.get('shipping_lines'):
-                price=float(lineship.get('price'))/1.21
+                price=round(float(lineship.get('price'))/1.21,2)
                 if price>0:
                     shipping = self.env['delivery.carrier'].sudo().search(
                         [('name', '=', lineship.get('title'))], limit=1)
