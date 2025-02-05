@@ -1,7 +1,10 @@
-from odoo import models, _
+from odoo import api, fields, models, _
 from dateutil import parser
 from odoo import fields
 from datetime import timezone
+
+import requests
+from odoo.exceptions import UserError
 
 import logging
 
