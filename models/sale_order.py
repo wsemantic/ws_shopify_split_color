@@ -196,7 +196,7 @@ class SaleOrder(models.Model):
                     "page_info": None,
                     "created_at_min": from_date,
                     "created_at_max": to_date,
-                    "status":any
+                    "status":"any"
                 }
             else:
                 params = {
