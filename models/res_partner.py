@@ -116,6 +116,7 @@ class ResPartner(models.Model):
                 # Prepara los valores a partir de shopify_customer
                 vals = {
                     'name': name,
+                    'customer_rank':1,
                     'email': shopify_customer.get('email'),
                     'vat': shopify_customer.get('vat'),
                     'shopify_customer_id': shopify_customer.get('id'),
