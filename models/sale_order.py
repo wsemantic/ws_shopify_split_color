@@ -1,4 +1,7 @@
 from odoo import models, _
+from dateutil import parser
+from odoo import fields
+from datetime import timezone
 
 import logging
 
@@ -134,6 +137,11 @@ class SaleOrder(models.Model):
         if order.get('customer'):
             res_partner = self.check_customer(order.get('customer'))
             if res_partner:
+                dt = parser.isoparse(order.get('created_at'))
+                # Convertir a UTC si es necesario:
+                dt_utc = dt.astimezone(timezone.utc)
+                date_order_value = fields.Datetime.to_string(dt_utc)
+                
                 res_partner.shopify_instance_id = shopify_instance_id.id
                 shopify_order_id = self.env['sale.order'].sudo().search(
                     [('shopify_order_id', '=', order.get('id'))], limit=1)
@@ -144,8 +152,8 @@ class SaleOrder(models.Model):
                     'shopify_order_id': order.get('id'),
                     'shopify_order_number': order.get('order_number'),
                     'shopify_order_status': order.get('status'),
-                    'create_date': order.get('created_at'),
-                    'date_order': order.get('created_at'),
+                    'create_date': date_order_value,
+                    'date_order': date_order_value,
                     'shopify_order_total': order.get('total_price'),
                     'is_shopify_order': True,
                     'order_shopify_id': order.get('order_id'),
