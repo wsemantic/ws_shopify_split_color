@@ -126,15 +126,84 @@ class SaleOrder(models.Model):
         return True
 
     def prepare_shopify_order_vals(self, shopify_instance_id, order, skip_existing_order):
-        # Llamamos al método original para obtener o crear la orden de Shopify
-        shopify_order_id = super(SaleOrder, self).prepare_shopify_order_vals(
-            shopify_instance_id, order, skip_existing_order
-        )
-        # Si se creó/actualizó la orden, añadimos o actualizamos el campo date_order
-        if shopify_order_id:
-            # Se actualiza el campo date_order con la fecha de creación de la orden de Shopify.
-            # Se usa sudo() para asegurarnos de que la escritura se realice sin restricciones.
-            shopify_order_id.sudo().write({
-                'date_order': order.get('created_at')
-            })
-        return shopify_order_id
+        # call a method to check the customer is available or not
+        # if not available create a customer
+        # if available get the customer id
+        # create a sale order
+        # create a sale order line
+        if order.get('customer'):
+            res_partner = self.check_customer(order.get('customer'))
+            if res_partner:
+                res_partner.shopify_instance_id = shopify_instance_id.id
+                shopify_order_id = self.env['sale.order'].sudo().search(
+                    [('shopify_order_id', '=', order.get('id'))], limit=1)
+                shopify_order_vals = {
+                    'partner_id': res_partner.id,
+                    'name': order.get('name'),
+                    'shopify_instance_id': shopify_instance_id.id,
+                    'shopify_order_id': order.get('id'),
+                    'shopify_order_number': order.get('order_number'),
+                    'shopify_order_status': order.get('status'),
+                    'create_date': order.get('created_at'),
+                    'date_order': order.get('created_at'),
+                    'shopify_order_total': order.get('total_price'),
+                    'is_shopify_order': True,
+                    'order_shopify_id': order.get('order_id'),
+                }
+                if not shopify_order_id:
+                    shopify_order_id = self.sudo().create(shopify_order_vals)
+                    shopify_order_id.state = 'draft'
+                else:
+                    if shopify_order_id and shopify_order_id.state == 'draft' and skip_existing_order == False:
+                        shopify_order_id.sudo().write(shopify_order_vals)
+                self.create_shopify_order_line(shopify_order_id, order, skip_existing_order, shopify_instance_id)
+
+                return shopify_order_id
+        
+    def import_shopify_orders(self, shopify_instance_ids, skip_existing_order, from_date, to_date):
+        if shopify_instance_ids == False:
+            shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
+        for shopify_instance_id in shopify_instance_ids:
+            self.import_shopify_draft_orders(shopify_instance_id, skip_existing_order, from_date, to_date)
+            # import shopify oders from shopify to odoo
+            # call method to connect to shopify
+
+            all_orders = []
+            url = self.get_order_url(shopify_instance_id, endpoint='orders.json')
+            access_token = shopify_instance_id.shopify_shared_secret
+            headers = {
+                "X-Shopify-Access-Token": access_token
+            }
+            if from_date and to_date:
+                params = {
+                    "limit": 250,  # Adjust the page size as needed
+                    "page_info": None,
+                    "created_at_min": from_date,
+                    "created_at_max": to_date,
+                }
+            else:
+                params = {
+                    "limit": 250,  # Adjust the page size as needed
+                    "page_info": None
+                }
+            while True:
+                response = requests.get(url, headers=headers, params=params)
+                if response.status_code == 200 and response.content:
+                    data = response.json()
+                    orders = data.get('orders', [])
+                    all_orders.extend(orders)
+
+                    page_info = data.get('page_info', {})
+                    if 'has_next_page' in page_info and page_info['has_next_page']:
+                        params['page_info'] = page_info['next_page']
+                    else:
+                        break
+                else:
+                    _logger.info("Error:", response.status_code)
+                    break
+            if all_orders:
+                orders = self.create_shopify_order(all_orders, shopify_instance_id, skip_existing_order, status='open')
+                return orders
+            else:
+                _logger.info("No orders found in shopify")
+                return []        
