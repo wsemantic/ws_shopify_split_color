@@ -124,3 +124,17 @@ class SaleOrder(models.Model):
                         shipping_so_line = self.env['sale.order.line'].sudo().create(shipping_vals)
 
         return True
+
+    def prepare_shopify_order_vals(self, shopify_instance_id, order, skip_existing_order):
+        # Llamamos al método original para obtener o crear la orden de Shopify
+        shopify_order_id = super(SaleOrder, self).prepare_shopify_order_vals(
+            shopify_instance_id, order, skip_existing_order
+        )
+        # Si se creó/actualizó la orden, añadimos o actualizamos el campo date_order
+        if shopify_order_id:
+            # Se actualiza el campo date_order con la fecha de creación de la orden de Shopify.
+            # Se usa sudo() para asegurarnos de que la escritura se realice sin restricciones.
+            shopify_order_id.sudo().write({
+                'date_order': order.get('created_at')
+            })
+        return shopify_order_id
