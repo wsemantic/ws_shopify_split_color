@@ -98,7 +98,7 @@ class SaleOrder(models.Model):
             
             for lineship in order.get('shipping_lines'):
                 price=float(lineship.get('price'))/1.21
-                if price>0
+                if price>0:
                     shipping = self.env['delivery.carrier'].sudo().search(
                         [('name', '=', lineship.get('title'))], limit=1)
                     if not shipping:
