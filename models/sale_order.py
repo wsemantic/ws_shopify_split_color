@@ -95,30 +95,32 @@ class SaleOrder(models.Model):
                         'tax_id': [(6, 0, tax_list)]
                     }
                     shopify_order_line_id = self.env['sale.order.line'].sudo().create(shopify_order_line_vals)
-            shiplines=order.get('shipping_lines')
-            if shiplines:
-                shipping = self.env['delivery.carrier'].sudo().search(
-                    [('name', '=', shiplines.get('title'))], limit=1)
-                if not shipping:
-                    delivery_product = self.env['product.product'].sudo().create({
-                        'name': shiplines.get('title'),
-                        'detailed_type': 'product',
-                    })
-                    vals = {
-                        'is_shopify': True,
-                        'shopify_instance_id': shopify_instance_id.id,
-                        'name': shiplines.get('title'),
-                        'product_id': delivery_product.id,
-                    }
-                    shipping = self.env['delivery.carrier'].sudo().create(vals)
-                if shipping and shipping.product_id:
-                    shipping_vals = {
-                        'product_id': shipping.product_id.id,
-                        'name': "Shipping",
-                        'price_unit': float(shiplines.get('price')),
-                        'order_id': shopify_order_id.id,
-                        'tax_id': [(6, 0, [])]
-                    }
-                    shipping_so_line = self.env['sale.order.line'].sudo().create(shipping_vals)
+            
+            for lineship in order.get('shipping_lines'):
+                price=float(lineship.get('price'))/1.21
+                if price>0
+                    shipping = self.env['delivery.carrier'].sudo().search(
+                        [('name', '=', lineship.get('title'))], limit=1)
+                    if not shipping:
+                        delivery_product = self.env['product.product'].sudo().create({
+                            'name': lineship.get('title'),
+                            'detailed_type': 'product',
+                        })
+                        vals = {
+                            'is_shopify': True,
+                            'shopify_instance_id': shopify_instance_id.id,
+                            'name': lineship.get('title'),
+                            'product_id': delivery_product.id,
+                        }
+                        shipping = self.env['delivery.carrier'].sudo().create(vals)
+                    if shipping and shipping.product_id:
+                        shipping_vals = {
+                            'product_id': shipping.product_id.id,
+                            'name': "Shipping",
+                            'price_unit': float(lineship.get('price')),
+                            'order_id': shopify_order_id.id,
+                            'tax_id': [(6, 0, [])]
+                        }
+                        shipping_so_line = self.env['sale.order.line'].sudo().create(shipping_vals)
 
         return True
