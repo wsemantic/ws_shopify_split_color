@@ -166,6 +166,7 @@ class SaleOrder(models.Model):
                     shopify_order_id.sudo().write({
                         'date_order': date_order_value,
                     })
+                    _logger.info("WSSH fecha pedido %s", date_order_value)
                     shopify_order_id.state = 'draft'
                 else:
                     if shopify_order_id and shopify_order_id.state == 'draft' and skip_existing_order == False:
