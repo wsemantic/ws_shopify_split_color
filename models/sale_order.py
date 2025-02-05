@@ -163,6 +163,9 @@ class SaleOrder(models.Model):
                 }
                 if not shopify_order_id:
                     shopify_order_id = self.sudo().create(shopify_order_vals)
+                    shopify_order_id.sudo().write({
+                        'date_order': date_order_value,
+                    })
                     shopify_order_id.state = 'draft'
                 else:
                     if shopify_order_id and shopify_order_id.state == 'draft' and skip_existing_order == False:
