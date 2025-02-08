@@ -33,6 +33,7 @@ class SaleOrder(models.Model):
         partner= super(SaleOrder, self).check_customer(customer)
         # Establecemos customer_rank en 1 en el partner obtenido
         partner.write({'customer_rank': 1})
+        partner.write({'ref': 'SID' + str(customer.get('id'))})        
         return partner
         
     
