@@ -58,7 +58,14 @@ class ProductTemplateSplitColor(models.Model):
         for instance_id in shopify_instance_ids:
             _logger.info("WSSH Starting product export for instance %s", instance_id.name)                                                                              
             # Filtrar productos modificados desde la última exportación
-            domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
+            if instance_id.last_export_product:
+                domain = ['|',
+                  ('write_date', '>', instance_id.last_export_product),
+                  ('is_shopify_product', '=', False)]
+            else:
+                # Si no hay fecha de última exportación, se toman todos los productos que no se han exportado
+                domain = [('is_shopify_product', '=', False)]
+
             # Aquí agregamos la condición para "campo_no_nulo = True"
             domain.append(('is_published', '=', True))
             products_to_export = self.search(domain,limit=1, order='CASE WHEN NOT is_shopify_product THEN 0 ELSE 1 END,create_date')
