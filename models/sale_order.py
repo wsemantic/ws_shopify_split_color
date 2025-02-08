@@ -229,8 +229,7 @@ class SaleOrder(models.Model):
         order_list = []
         for order in orders:
             if status == 'open':
-                shopify_order_id = self.env['sale.order'].sudo().search([('order_shopify_id', '=', order.get('id'))],
-                                                                        limit=1)
+                shopify_order_id = self.env['sale.order'].sudo().search([('shopify_order_id', '=', order.get('id'))],limit=1)
                 if not shopify_order_id:
                     shopify_order_id = self.prepare_shopify_order_vals(shopify_instance_id, order, skip_existing_order)
             else:
