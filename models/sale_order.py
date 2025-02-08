@@ -30,7 +30,10 @@ class SaleOrder(models.Model):
             _logger.info(f"WSSH asignamos name {default_name}")
 
         # Llamamos al método original (heredado) que se encargará del resto
-        return super(SaleOrder, self).check_customer(customer)
+        partner= super(SaleOrder, self).check_customer(customer)
+        # Establecemos customer_rank en 1 en el partner obtenido
+        partner.write({'customer_rank': 1})
+        return partner
         
     
     def create_shopify_order_line(self, shopify_order_id, order, skip_existing_order, shopify_instance_id):
