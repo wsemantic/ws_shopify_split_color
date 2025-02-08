@@ -72,7 +72,7 @@ class ProductTemplateSplitColor(models.Model):
                     ('is_shopify_product', '=', False)
                 ]
 
-            products_to_export = self.search(domain,limit=2, order='is_shopify_product,create_date')
+            products_to_export = self.search(domain,limit=5, order='is_shopify_product,create_date')
 
             product_count = len(products_to_export)
             _logger.info("WSSH Found %d products to export for instance %s", product_count, instance_id.name)
