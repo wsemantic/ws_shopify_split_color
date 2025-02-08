@@ -228,10 +228,14 @@ class SaleOrder(models.Model):
     def create_shopify_order(self, orders, shopify_instance_id, skip_existing_order, status):
         order_list = []
         for order in orders:
+            _logger.info(f"WSSH iterando orden {order.get('name')}")
             if status == 'open':
                 shopify_order_id = self.env['sale.order'].sudo().search([('shopify_order_id', '=', order.get('id'))],limit=1)
                 if not shopify_order_id:
+                    _logger.info(f"WSSH no existe {order.get('name')}")
                     shopify_order_id = self.prepare_shopify_order_vals(shopify_instance_id, order, skip_existing_order)
+                else:
+                    _logger.info(f"WSSH Encontrada orden {order.get('name')}")
             else:
                 shopify_order_id = self.prepare_shopify_order_vals(shopify_instance_id, order, skip_existing_order)
             if shopify_order_id:
