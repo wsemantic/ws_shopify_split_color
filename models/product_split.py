@@ -61,7 +61,7 @@ class ProductTemplateSplitColor(models.Model):
             domain = [('write_date', '>', instance_id.last_export_product)] if instance_id.last_export_product else []
             # Aquí agregamos la condición para "campo_no_nulo = True"
             domain.append(('is_published', '=', True))
-            products_to_export = self.search(domain,limit=1, order='create_date')
+            products_to_export = self.search(domain,limit=1, order='CASE WHEN NOT is_shopify_product THEN 0 ELSE 1 END,create_date')
 
             product_count = len(products_to_export)
             _logger.info("WSSH Found %d products to export for instance %s", product_count, instance_id.name)
