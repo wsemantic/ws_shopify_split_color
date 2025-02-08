@@ -226,7 +226,7 @@ class SaleOrder(models.Model):
                 _logger.info("No orders found in shopify")
                 return []        
 
-   def import_shopify_draft_orders(self, shopify_instance_ids, skip_existing_order, from_date, to_date):
+    def import_shopify_draft_orders(self, shopify_instance_ids, skip_existing_order, from_date, to_date):
         if shopify_instance_ids == False:
             shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
         for shopify_instance_id in shopify_instance_ids:
