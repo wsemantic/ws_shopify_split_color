@@ -190,19 +190,20 @@ class SaleOrder(models.Model):
             headers = {
                 "X-Shopify-Access-Token": access_token
             }
-            if from_date and to_date:
-                params = {
-                    "limit": 250,  # Adjust the page size as needed
-                    "page_info": None,
-                    "created_at_min": from_date,
-                    "created_at_max": to_date,
-                    "status":"any"
-                }
-            else:
-                params = {
-                    "limit": 250,  # Adjust the page size as needed
-                    "page_info": None
-                }
+            
+            effective_from_date = from_date or shopify_instance_id.shopify_last_date_order_import          
+                
+            # Configurar parámetros para la consulta a Shopify
+            params = {
+                "limit": 250,  # Ajusta el tamaño de página según sea necesario
+                "page_info": None,
+                "status": "any"
+            }
+            if effective_from_date:
+                params["created_at_min"] = effective_from_date
+            if to_date:
+                params["created_at_max"] = to_date  
+                
             while True:
                 response = requests.get(url, headers=headers, params=params)
                 if response.status_code == 200 and response.content:
@@ -225,6 +226,50 @@ class SaleOrder(models.Model):
                 _logger.info("No orders found in shopify")
                 return []        
 
+   def import_shopify_draft_orders(self, shopify_instance_ids, skip_existing_order, from_date, to_date):
+        if shopify_instance_ids == False:
+            shopify_instance_ids = self.env['shopify.instance'].sudo().search([('shopify_active', '=', True)])
+        for shopify_instance_id in shopify_instance_ids:
+            url = self.get_order_url(shopify_instance_id, endpoint='draft_orders.json')
+            access_token = shopify_instance_id.shopify_shared_secret
+            headers = {
+                "X-Shopify-Access-Token": access_token
+            }
+            effective_from_date = from_date or shopify_instance_id.shopify_last_date_order_import          
+                
+            # Configurar parámetros para la consulta a Shopify
+            params = {
+                "limit": 250,  # Ajusta el tamaño de página según sea necesario
+                "page_info": None,
+                "status": "any"
+            }
+            if effective_from_date:
+                params["created_at_min"] = effective_from_date
+            if to_date:
+                params["created_at_max"] = to_date  
+            all_orders = []
+
+            while True:
+                response = requests.get(url, headers=headers, params=params)
+                if response.status_code == 200 and response.content:
+                    draft_orders = response.json()
+                    orders = draft_orders.get('draft_orders', [])
+                    all_orders.extend(orders)
+                    page_info = draft_orders.get('page_info', {})
+                    if 'has_next_page' in page_info and page_info['has_next_page']:
+                        params['page_info'] = page_info['next_page']
+                    else:
+                        break
+                else:
+                    _logger.info("Error:", response.status_code)
+                    break
+            if all_orders:
+                orders = self.create_shopify_order(all_orders, shopify_instance_id, skip_existing_order, status='draft')
+                return orders
+            else:
+                _logger.info("No draft orders found in Shopify.")
+                return []
+                
     def create_shopify_order(self, orders, shopify_instance_id, skip_existing_order, status):
         order_list = []
         for order in orders:
