@@ -129,8 +129,8 @@ class ResPartner(models.Model):
                     # Siempre se actualizan estos campos
                     vals_update['shopify_customer_id'] = shopify_customer.get('id')
                     vals_update['is_shopify_customer'] = True
-    
-                    partner.write(vals_update)
+                        
+                    partner.with_context(no_vat_validation=True).write(vals_update)
             else:
                 _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
                 # Se arma el diccionario completo para la creación del partner
@@ -151,7 +151,8 @@ class ResPartner(models.Model):
                     'zip': zip,
                     'country_id': country_id,
                 }
-                partner = super(ResPartner, self).create(vals)
+                partner = super(ResPartner, self).with_context(no_vat_validation=True).create(vals)
+
             
             customer_list.append(partner.id)
         
