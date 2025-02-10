@@ -78,45 +78,64 @@ class ResPartner(models.Model):
         :param shopify_customers: Lista de diccionarios con datos de clientes de Shopify.
         :param shopify_instance_id: Instancia de Shopify.
         :param skip_existing_customer: Flag para omitir actualización si ya existe.
-        :return: recordset de res.partner creados o actualizados.
+        :return: Lista de IDs de res.partner creados o actualizados.
         """
-
         customer_list = []
-
-        for shopify_customer in shopify_customers:      
+    
+        for shopify_customer in shopify_customers:
+            # Reutilizamos la lógica para obtener el nombre del cliente
+            name = self._get_customer_name(shopify_customer)
+    
+            # Procesamos la dirección
             address = shopify_customer.get('addresses')
             street = street2 = city = zip = ""
             country_id = False
             if address:
-                street = address[0].get('address1') if address[0].get('address1') else ""
-                street2 = address[0].get('address2') if address[0].get('address2') else ""
-                city = address[0].get('city') if address[0].get('city') else ""
-                zip = address[0].get('zip') if address[0].get('zip') else ""
+                street = address[0].get('address1') or ""
+                street2 = address[0].get('address2') or ""
+                city = address[0].get('city') or ""
+                zip = address[0].get('zip') or ""
                 country_code = address[0].get('country_code')
-                country_id = self.env['res.country'].sudo().search(
-                    [('code', '=', country_code)], limit=1)
-                    
-            partner = self._find_existing_partner(shopify_customer,shopify_instance_id)
+                country = self.env['res.country'].sudo().search([('code', '=', country_code)], limit=1)
+                country_id = country.id if country else False
+    
+            # Se busca si el partner ya existe
+            partner = self._find_existing_partner(shopify_customer, shopify_instance_id)
             
             if partner:
                 _logger.info(f"WSSH Partner existente encontrado {partner.name} id {shopify_customer.get('id')}")
-                # Si se requiere actualizar los datos, se pueden incluir aquí:
-                partner.write({
-                    'shopify_customer_id': shopify_customer.get('id'),
-                    'is_shopify_customer': True
-                    # Puedes actualizar otros campos que consideres necesarios
-                })
+                if not skip_existing_customer:
+                    # Construimos vals_update solo con los campos que tengan valor
+                    vals_update = {}
+    
+                    if name:
+                        vals_update['name'] = name
+                    if shopify_customer.get('email'):
+                        vals_update['email'] = shopify_customer.get('email')
+                    if shopify_customer.get('phone'):
+                        vals_update['phone'] = shopify_customer.get('phone')
+                    if street:
+                        vals_update['street'] = street
+                    if street2:
+                        vals_update['street2'] = street2
+                    if city:
+                        vals_update['city'] = city
+                    if zip:
+                        vals_update['zip'] = zip
+                    if country_id:
+                        vals_update['country_id'] = country_id
+                    
+                    # Siempre se actualizan estos campos
+                    vals_update['shopify_customer_id'] = shopify_customer.get('id')
+                    vals_update['is_shopify_customer'] = True
+    
+                    partner.write(vals_update)
             else:
-                name = ((shopify_customer.get('first_name') or '') + ' ' +
-                        (shopify_customer.get('last_name') or '')).strip()
-                if not (shopify_customer.get('first_name') or shopify_customer.get('last_name')):            
-                    # Podemos usar el email o un texto fijo como nombre
-                    name = shopify_customer.get('email') or _("Shopify Customer")
                 _logger.info(f"WSSH Partner NO encontrado {name} id {shopify_customer.get('id')}")
-                # Prepara los valores a partir de shopify_customer
+                # Se arma el diccionario completo para la creación del partner
                 vals = {
                     'name': name,
-                    'customer_rank':1,
+                    'customer_rank': 1,
                     'email': shopify_customer.get('email'),
                     'vat': shopify_customer.get('vat'),
                     'shopify_customer_id': shopify_customer.get('id'),
@@ -129,12 +148,25 @@ class ResPartner(models.Model):
                     'street2': street2,
                     'city': city,
                     'zip': zip,
-                    'country_id': country_id.id if country_id else False
+                    'country_id': country_id,
                 }
-                # Llama al método original para crear el partner
                 partner = super(ResPartner, self).create(vals)
+            
             customer_list.append(partner.id)
+        
         return customer_list
+    
+    def _get_customer_name(self, shopify_customer):
+        """
+        Genera el nombre del cliente a partir de 'first_name' y 'last_name'.  
+        Si no se dispone de ellos, se utiliza el email o un valor por defecto.
+        """
+        first = shopify_customer.get('first_name') or ''
+        last = shopify_customer.get('last_name') or ''
+        name = (first + ' ' + last).strip()
+        if not name:
+            name = shopify_customer.get('email') or _("Shopify Customer")
+        return name	
 
     def _find_existing_partner(self, shopify_customer,shopify_instance_id):
         """
