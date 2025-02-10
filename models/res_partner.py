@@ -34,7 +34,7 @@ class ResPartner(models.Model):
             params = {
                 "limit": 250,
                 "page_info": None,
-                "id":8609846427994
+                "ids":8609846427994
             }
             # Si existe shopify_last_date_customer_import (puede ser nulo la primera vez), se añade el filtro.
             if shopify_instance_id.shopify_last_date_customer_import:
