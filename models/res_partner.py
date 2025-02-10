@@ -185,13 +185,14 @@ class ResPartner(models.Model):
         shopify_customer_id = shopify_customer.get('id')
         email = shopify_customer.get('email')
         vat = shopify_customer.get('vat')
-
+        phone = shopify_customer.get('phone')
         # Limpiar cadenas para eliminar secuencias de escape no deseadas
         if email:
             email = shopify_instance_id.clean_string(email)
         if vat:
             vat = shopify_instance_id.clean_string(vat)
-
+        if phone:
+            phone = shopify_instance_id.clean_string(phone)
         # Buscar por mapping de Shopify
         partner = self.search([('shopify_customer_id', '=', shopify_customer_id)], limit=1)
         if partner:
@@ -204,16 +205,29 @@ class ResPartner(models.Model):
         if vat and not self._is_valid_vat(vat):
             _logger.warning("El VAT '%s' no es válido y se omite en la búsqueda", vat)
             vat = None
-
+        # Validar teléfono (opcional)
+        if phone and not self._is_valid_phone(phone):
+            _logger.warning("El teléfono '%s' no es válido y se omite en la búsqueda", phone)
+            phone = None
+			
         # Si no se encontró, buscar por email o VAT en partners sin mapping
         domain = [('shopify_customer_id', '=', False)]
-        if email and vat:
-            # Usamos el operador OR para buscar coincidencia en email o en vat
-            domain += ['|', ('email', '=', email), ('vat', '=', vat)]
-        elif email:
-            domain.append(('email', '=', email))
-        elif vat:
-            domain.append(('vat', '=', vat))
+        # Recopilamos las condiciones disponibles
+        or_conditions = []
+        if email:
+            or_conditions.append(('email', '=', email))
+        if vat:
+            or_conditions.append(('vat', '=', vat))
+        if phone:
+            or_conditions.append(('phone', '=', phone))
+    
+        # Si tenemos más de una condición, combinamos con el operador OR.
+        if len(or_conditions) == 1:
+            domain += or_conditions
+        elif len(or_conditions) > 1:
+            # Para N condiciones se necesitan (N-1) operadores OR. Ejemplo:
+            # Si hay 3 condiciones: ['|', '|', cond1, cond2, cond3]
+            domain += ['|'] * (len(or_conditions) - 1) + or_conditions
         partner = self.search(domain, limit=1)
         return partner
 
