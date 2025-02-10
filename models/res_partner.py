@@ -250,6 +250,16 @@ class ResPartner(models.Model):
             if re.match(pattern, vat):
                 return True
         return False
+        
+    def _is_valid_phone(self, phone):
+        """
+        Valida que el teléfono tenga un formato básico.
+        Se permite dígitos, espacios, paréntesis, guiones y el signo '+'.
+        """
+        pattern = r'^[\d\+\-\s\(\)]+$'
+        if isinstance(phone, str) and re.match(pattern, phone):
+            return True
+        return False
 
     def export_customers_to_shopify(self, shopify_instance_ids, update):
         """
