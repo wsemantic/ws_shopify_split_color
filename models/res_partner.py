@@ -129,6 +129,7 @@ class ResPartner(models.Model):
                     # Siempre se actualizan estos campos
                     vals_update['shopify_customer_id'] = shopify_customer.get('id')
                     vals_update['is_shopify_customer'] = True
+                    vals_update['vat'] = shopify_customer.get('vat')
                         
                     partner.with_context(no_vat_validation=True).write(vals_update)
             else:
