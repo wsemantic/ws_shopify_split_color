@@ -103,8 +103,9 @@ class ResPartner(models.Model):
             partner = self._find_existing_partner(shopify_customer, shopify_instance_id)
             
             if partner:
-                _logger.info(f"WSSH Partner existente encontrado {partner.name} id {shopify_customer.get('id')}")
+                _logger.info(f"WSSH Partner existente encontrado {partner.name} updatename {name} id {shopify_customer.get('id')} skip {skip_existing_customer}")
                 if not skip_existing_customer:
+                    _logger.info(f"WSSH Dentro skip")
                     # Construimos vals_update solo con los campos que tengan valor
                     vals_update = {}
     
