@@ -60,17 +60,23 @@ class ProductTemplateSplitColor(models.Model):
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
                 domain = [
-                    ('is_published', '=', True),  # Siempre publicado
-                    '|',  # Operador OR entre las siguientes dos condiciones:
-                    ('write_date', '>', instance_id.last_export_product),
-                    ('is_shopify_product', '=', False)
+                    ('is_published', '=', True),
+                    '|',
+                        ('write_date', '>', instance_id.last_export_product),
+                        '&',
+                            ('attribute_line_ids.attribute_id.name', 'ilike', 'color'),
+                            ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
                 ]
             else:
-                # Si no hay fecha de última exportación, se filtran solo los no exportados
                 domain = [
                     ('is_published', '=', True),
-                    ('is_shopify_product', '=', False)
+                    '|',
+                        ('is_shopify_product', '=', False),
+                        '&',
+                            ('attribute_line_ids.attribute_id.name', 'ilike', 'color'),
+                            ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
                 ]
+
 
             products_to_export = self.search(domain,limit=10, order='is_shopify_product,create_date')
 
