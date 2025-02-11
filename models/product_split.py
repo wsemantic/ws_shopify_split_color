@@ -60,7 +60,7 @@ class ProductTemplateSplitColor(models.Model):
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
                 domain = [
-                    ('is_published', '=', True),
+                    ('id', '=', 2537),
                     '|',
                         ('write_date', '>', instance_id.last_export_product),
                         '&',
@@ -95,8 +95,8 @@ class ProductTemplateSplitColor(models.Model):
             # Iterar sobre cada producto a exportar
             for product in products_to_export:
                 _logger.info("WSSH Exporting product: %s (ID: %d)", product.name, product.id)
-                if 2>1:
-                    continue
+                #if 2>1:
+                #    continue
                 if not instance_id.split_products_by_color:
                     # Si no hay split por colores, exportar el producto normalmente
                     self._export_single_product(product, instance_id, headers, update)
@@ -125,6 +125,7 @@ class ProductTemplateSplitColor(models.Model):
                     variant_data = [
                         self._prepare_shopify_variant_data(variant, instance_id, template_attribute_value, True, update)
                         for variant in variants
+                        if variant.default_code
                     ]
 
                     product_data = {
@@ -213,6 +214,7 @@ class ProductTemplateSplitColor(models.Model):
         variant_data = [
             self._prepare_shopify_variant_data(variant, instance_id, is_update=update)
             for variant in product.product_variant_ids
+            if variant.default_code
         ]
 
         product_data = {
@@ -244,7 +246,9 @@ class ProductTemplateSplitColor(models.Model):
             if response.ok:
                 # Actualizar las variantes individualmente
                 for variant in product.product_variant_ids:
-                    self._update_shopify_variant(variant, instance_id, headers)
+                    if variant.default_code:
+                        self._update_shopify_variant(variant, instance_id, headers)
+                    
         else:
             # Si es un nuevo producto, enviamos también las variantes
             product_data["product"]["status"]='draft'
