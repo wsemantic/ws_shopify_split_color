@@ -60,7 +60,7 @@ class ProductTemplateSplitColor(models.Model):
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
                 domain = [
-                    ('id', '=', 2537),
+                    ('is_published', '=', True),
                     '|',
                         ('write_date', '>', instance_id.last_export_product),
                         '&',
