@@ -25,7 +25,7 @@ class ProductTemplateSplitColor(models.Model):
     def _prepare_shopify_variant_data(self, variant, instance_id, template_attribute_value=None, is_color_split=False, is_update=False):
         """Prepara los datos de la variante para enviar a Shopify"""
         variant_data = {
-            "price": str(variant.lst_price),
+            "price": variant.lst_price,
             "sku": variant.default_code or "",
             "barcode": variant.barcode or "",
             "inventory_management": "shopify"
