@@ -127,6 +127,12 @@ class ProductTemplateSplitColor(models.Model):
                         for variant in variants
                         if variant.default_code
                     ]
+                    
+                    # Si no hay variantes con default_code, se salta este producto virtual
+                    if not variant_data:
+                        _logger.info("WSSH Skipping Shopify export for product '%s' with color '%s' because no variant has default_code",
+                                     product.name, template_attribute_value.name)
+                        continue
 
                     product_data = {
                         "product": {
