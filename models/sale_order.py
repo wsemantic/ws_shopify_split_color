@@ -71,11 +71,11 @@ class SaleOrder(models.Model):
                                                           ('shopify_variant_id', '=', line.get('variant_id'))],
                                                          limit=1)
             if not product:
-                generic_product = self.env.ref('ws_shopify_split_color.product_generic', raise_if_not_found=False)
-                if not generic_product:
-                    raise UserError(_("No se ha definido el producto genérico en el sistema."))
-                product = generic_product
-                product_name = "{} - {}".format(generic_product.name, line.get('title'))
+                #generic_product = self.env.ref('ws_shopify_split_color.product_generic', raise_if_not_found=False)
+                #if not generic_product:
+                raise UserError(_("No se ha definido el producto genérico en el sistema."))
+                #product = generic_product
+                #product_name = "{} - {}".format(generic_product.name, line.get('title'))
             else:
                 product_name = line.get('title')
                 
