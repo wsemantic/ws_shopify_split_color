@@ -99,7 +99,7 @@ class ProductTemplateSplitColor(models.Model):
             }
 
             processed_count = 0
-            max_processed = 10  # Limitar a 10 productos exportados por ejecución
+            max_processed = 1  # Limitar a 10 productos exportados por ejecución
         
             # Iterar sobre cada producto a exportar
             for product in products_to_export:
