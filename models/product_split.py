@@ -65,24 +65,17 @@ class ProductTemplateSplitColor(models.Model):
         for instance_id in shopify_instance_ids:                                                                             
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
-                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name} atcolor {color_attribute}") 
+                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name} atcolor {color_attribute} update {update}") 
                 domain = [
                     ('is_published', '=', True),
-                    '|',
-                        ('write_date', '>', instance_id.last_export_product),
-                        '&',
-                            ('attribute_line_ids.attribute_id', '=', color_attribute.id),                            
-                            ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
+                    ('write_date', '>', instance_id.last_export_product)
                 ]
             else:
                 _logger.info("WSSH Starting product export SIN fecha for instance %s", instance_id.name)
                 domain = [
-                        ('is_shopify_product', '=', False),
-                        '&',
-                            ('attribute_line_ids.attribute_id', '=', color_attribute.id),
-                            ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
+                        ('is_published', '=', True),
+                        ('is_shopify_product', '=', False)
                 ]
-
 
             products_to_export = self.search(domain, order='is_shopify_product,create_date')
 
