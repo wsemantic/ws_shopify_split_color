@@ -122,6 +122,7 @@ class ProductTemplateSplitColor(models.Model):
                     )
 
                     if not variants:
+                        _logger.info(f"WSSH No hay variantes con codigo")
                         continue
 
                     # Preparar datos para Shopify
