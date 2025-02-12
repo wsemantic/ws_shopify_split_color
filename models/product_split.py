@@ -101,8 +101,8 @@ class ProductTemplateSplitColor(models.Model):
             # Iterar sobre cada producto a exportar
             for product in products_to_export:
                 _logger.info("WSSH Exporting product: %s (ID: %d)", product.name, product.id)
-                if 2>1:
-                    continue
+                #if 2>1:
+                #    continue
                 if not instance_id.split_products_by_color:
                     # Si no hay split por colores, exportar el producto normalmente
                     self._export_single_product(product, instance_id, headers, update)
