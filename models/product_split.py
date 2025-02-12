@@ -58,7 +58,7 @@ class ProductTemplateSplitColor(models.Model):
         color_attribute = None
         for attr in self.env['product.attribute'].search([]):
             # Supongamos que quieres el valor en inglés, 'en_US'
-            if attr.name and attr.name.get('en_US', '').lower().find('color') != -1:
+            if attr.name and attr.name.lower().find('color') != -1:
                 color_attribute = attr
                 break
 
