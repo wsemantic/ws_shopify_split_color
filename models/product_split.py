@@ -55,10 +55,10 @@ class ProductTemplateSplitColor(models.Model):
         """
         Exporta productos a Shopify, filtrando por aquellos modificados desde la última exportación.
         """
-        for instance_id in shopify_instance_ids:
-            _logger.info("WSSH Starting product export for instance %s", instance_id.name)                                                                              
+        for instance_id in shopify_instance_ids:                                                                             
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
+                _logger.info(f"WSSH Starting product export por fecha {last_export_product} instance {instance_id.name}") 
                 domain = [
                     ('is_published', '=', True),
                     '|',
@@ -68,9 +68,8 @@ class ProductTemplateSplitColor(models.Model):
                             ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
                 ]
             else:
+                _logger.info("WSSH Starting product export SIN fecha for instance %s", instance_id.name)
                 domain = [
-                    ('is_published', '=', True),
-                    '|',
                         ('is_shopify_product', '=', False),
                         '&',
                             ('attribute_line_ids.attribute_id.name', 'ilike', 'color'),
@@ -155,16 +154,17 @@ class ProductTemplateSplitColor(models.Model):
                     }
 
                     # Si el producto ya existe, solo actualizamos el producto y sus opciones
-                    if template_attribute_value.shopify_product_id and update:  # Acceso correcto al campo
-                        product_data["product"]["id"] = template_attribute_value.shopify_product_id
-                        url = self.get_products_url(instance_id, f'products/{template_attribute_value.shopify_product_id}.json')
-                        response = requests.put(url, headers=headers, data=json.dumps(product_data))
-                        _logger.info(f"WSSH Updating Shopify product {template_attribute_value.shopify_product_id}")
+                    if template_attribute_value.shopify_product_id:  # Acceso correcto al campo
+                        if update:
+                            product_data["product"]["id"] = template_attribute_value.shopify_product_id
+                            url = self.get_products_url(instance_id, f'products/{template_attribute_value.shopify_product_id}.json')
+                            response = requests.put(url, headers=headers, data=json.dumps(product_data))
+                            _logger.info(f"WSSH Updating Shopify product {template_attribute_value.shopify_product_id}")
 
-                        if response.ok:
-                            # Actualizar las variantes individualmente
-                            for variant in variants:
-                                self._update_shopify_variant(variant, instance_id, headers)
+                            if response.ok:
+                                # Actualizar las variantes individualmente
+                                for variant in variants:
+                                    self._update_shopify_variant(variant, instance_id, headers)
                     else:
                         # Si es un nuevo producto, enviamos también las variantes
                         product_data["product"]["variants"] = variant_data
