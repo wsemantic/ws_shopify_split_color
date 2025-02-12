@@ -65,7 +65,7 @@ class ProductTemplateSplitColor(models.Model):
         for instance_id in shopify_instance_ids:                                                                             
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
-                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name} atcolor {color_attribute} update {update}") 
+                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name} atcolor {color_attribute}") 
                 domain = [
                     ('is_published', '=', True),
                     ('write_date', '>', instance_id.last_export_product)
@@ -95,8 +95,7 @@ class ProductTemplateSplitColor(models.Model):
             max_processed = 1  # Limitar a 10 productos exportados por ejecución
         
             # Iterar sobre cada producto a exportar
-            for product in products_to_export:
-                _logger.info("WSSH Exporting product: %s (ID: %d)", product.name, product.id)
+            for product in products_to_export:                
                 #if 2>1:
                 #    continue
                 if not instance_id.split_products_by_color:
@@ -113,6 +112,7 @@ class ProductTemplateSplitColor(models.Model):
                     self._export_single_product(product, instance_id, headers, update)
                     continue
 
+                _logger.info(f"WSSH Exporting product: {product.name} (ID:{product.id}) update {update}")
                 # Exportar cada color como un producto separado
                 for template_attribute_value in color_line.product_template_value_ids:
                     response = None
