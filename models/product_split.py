@@ -192,7 +192,7 @@ class ProductTemplateSplitColor(models.Model):
                                 product.shopify_instance_id = instance_id.id
                                 product.is_exported = True
 
-                    if not response.ok:
+                    if response is not None and not response.ok:
                         _logger.error(f"WSSH Error exporting product: {response.text}")
                         raise UserError(f"WSSH Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
 
