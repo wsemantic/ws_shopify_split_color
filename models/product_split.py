@@ -171,6 +171,8 @@ class ProductTemplateSplitColor(models.Model):
                                 processed_count += 1
                                 for variant in variants:
                                     self._update_shopify_variant(variant, instance_id, headers)
+                        else:
+                            _logger.info(f"WSSH Existe variant id pero no Update {template_attribute_value.shopify_product_id}")
                     else:
                         # Si es un nuevo producto, enviamos también las variantes
                         product_data["product"]["variants"] = variant_data
