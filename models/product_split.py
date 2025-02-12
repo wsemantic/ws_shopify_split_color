@@ -84,7 +84,7 @@ class ProductTemplateSplitColor(models.Model):
                 ]
 
 
-            products_to_export = self.search(domain,limit=1, order='is_shopify_product,create_date')
+            products_to_export = self.search(domain, order='is_shopify_product,create_date')
 
             product_count = len(products_to_export)
             _logger.info("WSSH Found %d products to export for instance %s", product_count, instance_id.name)
@@ -98,6 +98,9 @@ class ProductTemplateSplitColor(models.Model):
                 "Content-Type": "application/json"
             }
 
+            processed_count = 0
+            max_processed = 10  # Limitar a 10 productos exportados por ejecución
+        
             # Iterar sobre cada producto a exportar
             for product in products_to_export:
                 _logger.info("WSSH Exporting product: %s (ID: %d)", product.name, product.id)
@@ -119,6 +122,7 @@ class ProductTemplateSplitColor(models.Model):
 
                 # Exportar cada color como un producto separado
                 for template_attribute_value in color_line.product_template_value_ids:
+                    response = None
                     # Filtrar variantes para este color
                     variants = product.product_variant_ids.filtered(
                         lambda v: template_attribute_value in v.product_template_attribute_value_ids
@@ -170,6 +174,7 @@ class ProductTemplateSplitColor(models.Model):
 
                             if response.ok:
                                 # Actualizar las variantes individualmente
+                                processed_count += 1
                                 for variant in variants:
                                     self._update_shopify_variant(variant, instance_id, headers)
                     else:
@@ -181,6 +186,7 @@ class ProductTemplateSplitColor(models.Model):
                         _logger.info("WSSHCreating new Shopify product")
 
                         if response.ok:
+                            processed_count += 1
                             shopify_product = response.json().get('product', {})
                             if shopify_product:
                                 # Guardar el ID del producto y actualizar los IDs de las variantes
@@ -196,6 +202,10 @@ class ProductTemplateSplitColor(models.Model):
                         _logger.error(f"WSSH Error exporting product: {response.text}")
                         raise UserError(f"WSSH Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
 
+            if processed_count >= max_processed:
+                _logger.info("WSSH Processed %d products for instance %s. Stopping export for this run.", processed_count, instance_id.name)
+                break
+                
             # Actualizar la fecha de la última exportación
             instance_id.last_export_product = fields.Datetime.now()
 
