@@ -55,16 +55,23 @@ class ProductTemplateSplitColor(models.Model):
         """
         Exporta productos a Shopify, filtrando por aquellos modificados desde la última exportación.
         """
+        color_attribute = None
+        for attr in self.env['product.attribute'].search([]):
+        # Supongamos que quieres el valor en inglés, 'en_US'
+        if attr.name and attr.name.get('en_US', '').lower().find('color') != -1:
+            color_attribute = attr
+            break
+
         for instance_id in shopify_instance_ids:                                                                             
             # Filtrar productos modificados desde la última exportación
             if instance_id.last_export_product:
-                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name}") 
+                _logger.info(f"WSSH Starting product export por fecha {instance_id.last_export_product} instance {instance_id.name} atcolor {color_attribute}") 
                 domain = [
                     ('is_published', '=', True),
                     '|',
                         ('write_date', '>', instance_id.last_export_product),
                         '&',
-                            ('attribute_line_ids.attribute_id.name', 'ilike', 'color'),
+                            ('attribute_line_ids.attribute_id', '=', color_attribute.id),                            
                             ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
                 ]
             else:
@@ -72,7 +79,7 @@ class ProductTemplateSplitColor(models.Model):
                 domain = [
                         ('is_shopify_product', '=', False),
                         '&',
-                            ('attribute_line_ids.attribute_id.name', 'ilike', 'color'),
+                            ('attribute_line_ids.attribute_id', '=', color_attribute.id),
                             ('attribute_line_ids.product_template_value_ids.shopify_product_id', '=', False),
                 ]
 
