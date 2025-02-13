@@ -392,14 +392,14 @@ class ProductTemplateSplitColor(models.Model):
               ], limit=1)
               
               if existing_variant:
-                  # Si se encuentra una variante, actualizar el valor de atributo de tipo "color"
-                  for attribute_line in existing_variant.attribute_line_ids:
-                      for template_value in attribute_line.product_template_value_ids:
-                          if template_value.attribute_id.name.lower() == 'color':
-                              template_value.write({
-                                  'shopify_product_id': shopify_product_id,
-                              })
-                              _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}.")                              
+                  # Filtramos los valores de atributo cuyo atributo sea "color"
+                  color_values = existing_variant.product_template_attribute_value_ids.filtered(
+                      lambda v: v.attribute_id.name.lower() == 'color'
+                  )
+                  if color_values:
+                      color_values.write({'shopify_product_id': shopify_product_id})
+                      for template_value in color_values:
+                          _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}."º)                              
                   
                   self._update_variant_ids([existing_variant], [variant])                  
                   
