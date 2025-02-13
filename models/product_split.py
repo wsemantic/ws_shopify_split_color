@@ -199,9 +199,9 @@ class ProductTemplateSplitColor(models.Model):
                         _logger.error(f"WSSH Error exporting product: {response.text}")
                         raise UserError(f"WSSH Error exporting product {product.name} - {template_attribute_value.name}: {response.text}")
 
-            if processed_count >= max_processed:
-                _logger.info("WSSH Processed %d products for instance %s. Stopping export for this run.", processed_count, instance_id.name)
-                break
+                if processed_count >= max_processed:
+                    _logger.info("WSSH Processed %d products for instance %s. Stopping export for this run.", processed_count, instance_id.name)
+                    break
                 
             # Actualizar la fecha de la última exportación
             instance_id.last_export_product = fields.Datetime.now()
