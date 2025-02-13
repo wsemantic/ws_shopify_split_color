@@ -399,7 +399,7 @@ class ProductTemplateSplitColor(models.Model):
                   if color_values:
                       color_values.write({'shopify_product_id': shopify_product_id})
                       for template_value in color_values:
-                          _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}."º)                              
+                          _logger.info(f"WSSH Updated color attribute value {template_value.name} with Shopify ID {shopify_product_id}.")                              
                   
                   self._update_variant_ids([existing_variant], [variant])                  
                   
