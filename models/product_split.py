@@ -112,9 +112,10 @@ class ProductTemplateSplitColor(models.Model):
                     self._export_single_product(product, instance_id, headers, update)
                     continue
 
-                _logger.info(f"WSSH Exporting product: {product.name} (ID:{product.id}) update {update}")
+               
                 # Exportar cada color como un producto separado
                 for template_attribute_value in color_line.product_template_value_ids:
+                    _logger.info(f"WSSH Exporting product: {product.name} (ID:{product.id}) update {update} variante {template_attribute_value.name}")
                     response = None
                     # Filtrar variantes para este color
                     variants = product.product_variant_ids.filtered(
