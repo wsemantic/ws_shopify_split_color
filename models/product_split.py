@@ -520,14 +520,7 @@ class ProductTemplateSplitColor(models.Model):
         iteration_start_time = time.time()
     
         # Actualizar Shopify para cada producto
-        for product, data in sorted_products:
-            # Comprobar si se ha superado el tiempo máximo permitido en la iteración
-            if time.time() - iteration_start_time > iteration_timeout:
-                _logger.error("WSSH Timeout de iteración alcanzado para el producto %s. Actualizando last_export_stock con write_date %s",
-                              product.default_code, data['write_date'])
-                shopify_instance.last_export_stock = data['write_date']
-                return updated_ids
-    
+        for product, data in sorted_products:    
             available_qty = data['quantity']
             current_write_date = data['write_date']
             _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty} con write_date {current_write_date}")
@@ -567,6 +560,14 @@ class ProductTemplateSplitColor(models.Model):
                     _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s",
                                     product.product_tmpl_id.name, product.name, response.text)
                     break
+                        # Comprobar si se ha superado el tiempo máximo permitido en la iteración
+                        
+            if time.time() - iteration_start_time > iteration_timeout:
+                _logger.error("WSSH Timeout de iteración alcanzado para el producto %s. Actualizando last_export_stock con write_date %s",
+                              product.default_code, data['write_date'])
+                shopify_instance.last_export_stock = data['write_date']
+                return updated_ids
+                
         shopify_instance.last_export_stock = fields.Datetime.now()
     
         return updated_ids
