@@ -495,7 +495,7 @@ class ProductTemplateSplitColor(models.Model):
         if shopify_instance.last_export_stock:
             domain.append(('write_date', '>', shopify_instance.last_export_stock))
 
-        stock_quants = self.env['stock.quant'].sudo().search(domain, limit=2, order="product_id")
+        stock_quants = self.env['stock.quant'].sudo().search(domain,order="product_id")
         _logger.info(f"WSSH Found {len(stock_quants)} fecha {shopify_instance.last_export_stock}")
         
         # Agrupar los quants por producto para sumar las cantidades disponibles
