@@ -27,6 +27,7 @@
         # 'security/ir.model.access.csv',
         'views/shopify_instance.xml',
         'views/templates.xml',
+        'wizard/operation_view.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

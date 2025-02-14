@@ -1,0 +1,22 @@
+<odoo>
+    <data>
+        <!-- Heredamos la vista del wizard de Shopify -->
+        <record id="shopify_operation_view_inherit_export_stock" model="ir.ui.view">
+            <field name="name">shopify.operation.wizard.inherit.export.stock</field>
+            <field name="model">shopify.operation</field>
+            <field name="inherit_id" ref="pragtech_odoo_shopify_connector.shopify_operation_view"/>
+            <field name="arch" type="xml">
+                <!-- Forzamos que el campo de exportación se muestre como radio -->
+                <xpath expr="//field[@name='export_shopify_operation']" position="attributes">
+                    <attribute name="widget">radio</attribute>
+                </xpath>
+                <!-- (Opcional) Agregar una nota o ayuda para la nueva opción -->
+                <xpath expr="//field[@name='export_shopify_operation']" position="after">
+                    <div class="o_field_notes">
+                        Seleccione "Export Stock" para actualizar niveles de inventario en Shopify.
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

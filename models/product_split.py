@@ -473,3 +473,53 @@ class ProductTemplateSplitColor(models.Model):
         _logger.info(f"WSSH Created new product template {product_template.name} from Shopify product ID {shopify_product.get('id')}.")
         
         return product_template
+
+ 
+    def export_stock_to_shopify(self, shopify_instance):
+        """
+        Exporta el stock a Shopify para las variantes que tienen definido el campo shopify_inventory_item_id.
+        Se realiza una única búsqueda de stock.quant en la ubicación definida en la instancia, filtrando:
+          - Stock de la ubicación asignada.
+          - Productos cuya variante tenga shopify_inventory_item_id definido.
+          - Si shopify_instance.last_export_stock existe, solo aquellos cuyo product_id.write_date es posterior.
+        Se agrupan los quants por producto para sumar la cantidad disponible y se actualiza el stock en Shopify.
+        """
+        updated_ids = []
+        location_id = shopify_instance.shopify_location_id.id
+
+        # Dominio en stock.quant usando búsqueda en campo relacionado:
+        domain = [
+            ('location_id', '=', location_id),
+            ('product_id.shopify_inventory_item_id', '!=', False)
+        ]
+        if shopify_instance.last_export_stock:
+            domain.append(('product_id.write_date', '>', shopify_instance.last_export_stock))
+
+        stock_quants = self.env['stock.quant'].sudo().search(domain, order="product_id")
+        
+        # Agrupar los quants por producto para sumar las cantidades disponibles
+        product_qty = {}
+        for quant in stock_quants:
+            product = quant.product_id
+            product_qty.setdefault(product, 0)
+            product_qty[product] += quant.quantity
+
+        # Actualizar Shopify para cada producto
+        for product, available_qty in product_qty.items():
+            url = url = self.get_products_url(shopify_instance, 'inventory_levels/set.json')
+            headers = {
+                "X-Shopify-Access-Token": shopify_instance.shopify_shared_secret,
+                "Content-Type": "application/json"
+            }
+            data = {
+                "location_id": location_id,
+                "inventory_item_id": product.shopify_inventory_item_id,
+                "available": available_qty,
+            }
+            response = requests.post(url, headers=headers, json=data)
+            if response.status_code in (200, 201):
+                _logger.info("Stock updated for product %s (variant %s): %s available", product.product_tmpl_id.name, product.name, available_qty)
+                updated_ids.append(product.id)
+            else:
+                _logger.warning("Failed to update stock for product %s (variant %s): %s", product.product_tmpl_id.name, product.name, response.text)
+        return updated_ids
