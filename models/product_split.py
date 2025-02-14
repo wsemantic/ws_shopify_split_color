@@ -485,11 +485,11 @@ class ProductTemplateSplitColor(models.Model):
         """
         _logger.info("WSSH Exportar stocks")
         updated_ids = []
-        location_id = shopify_instance.shopify_location_id.id
+        location = self.env['shopify.location'].sudo().search([('is_shopify', '=', True)], limit=1)
+
 
         # Dominio en stock.quant usando búsqueda en campo relacionado:
-        domain = [
-            ('location_id', '=', location_id),
+        domain = [            
             ('product_id.shopify_inventory_item_id', '!=', False)
         ]
         if shopify_instance.last_export_stock:
@@ -514,7 +514,7 @@ class ProductTemplateSplitColor(models.Model):
                 "Content-Type": "application/json"
             }
             data = {
-                "location_id": location_id,
+                "location_id": location.shopify_location_id,
                 "inventory_item_id": product.shopify_inventory_item_id,
                 "available": available_qty,
             }
