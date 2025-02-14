@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from datetime import timedelta
+
 import logging
 import json
 import requests
@@ -562,10 +564,12 @@ class ProductTemplateSplitColor(models.Model):
                     break
                         # Comprobar si se ha superado el tiempo máximo permitido en la iteración
                         
+            # Tras enviar la query, comprobamos si se ha superado el tiempo total de iteración.
             if time.time() - iteration_start_time > iteration_timeout:
+                adjusted_write_date = current_write_date - timedelta(seconds=1)
                 _logger.error("WSSH Timeout de iteración alcanzado para el producto %s. Actualizando last_export_stock con write_date %s",
-                              product.default_code, data['write_date'])
-                shopify_instance.last_export_stock = data['write_date']
+                              product.default_code, adjusted_write_date)
+                shopify_instance.last_export_stock = adjusted_write_date
                 return updated_ids
                 
         shopify_instance.last_export_stock = fields.Datetime.now()
