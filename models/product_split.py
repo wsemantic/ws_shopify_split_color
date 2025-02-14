@@ -484,7 +484,7 @@ class ProductTemplateSplitColor(models.Model):
           - Si shopify_instance.last_export_stock existe, solo aquellos cuyo product_id.write_date es posterior.
         Se agrupan los quants por producto para sumar la cantidad disponible y se actualiza el stock en Shopify.
         """
-        logger.info("WSSH Exportar stocks")
+        _logger.info("WSSH Exportar stocks")
         updated_ids = []
         location_id = shopify_instance.shopify_location_id.id
 
