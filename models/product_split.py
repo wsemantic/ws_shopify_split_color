@@ -508,6 +508,7 @@ class ProductTemplateSplitColor(models.Model):
 
         # Actualizar Shopify para cada producto
         for product, available_qty in product_qty.items():
+            _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty}" )
             url = url = self.get_products_url(shopify_instance, 'inventory_levels/set.json')
             headers = {
                 "X-Shopify-Access-Token": shopify_instance.shopify_shared_secret,
