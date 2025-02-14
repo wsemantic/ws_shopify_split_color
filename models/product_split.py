@@ -549,5 +549,6 @@ class ProductTemplateSplitColor(models.Model):
                     _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s",
                                     product.product_tmpl_id.name, product.name, response.text)
                     break
+        shopify_instance.last_export_stock = fields.Datetime.now()
     
         return updated_ids
