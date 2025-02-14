@@ -484,6 +484,7 @@ class ProductTemplateSplitColor(models.Model):
           - Si shopify_instance.last_export_stock existe, solo aquellos cuyo product_id.write_date es posterior.
         Se agrupan los quants por producto para sumar la cantidad disponible y se actualiza el stock en Shopify.
         """
+        logger.info("WSSH Exportar stocks")
         updated_ids = []
         location_id = shopify_instance.shopify_location_id.id
 
@@ -496,6 +497,7 @@ class ProductTemplateSplitColor(models.Model):
             domain.append(('product_id.write_date', '>', shopify_instance.last_export_stock))
 
         stock_quants = self.env['stock.quant'].sudo().search(domain, order="product_id")
+        _logger.info("WSSH Found %d ", len(stock_quants))
         
         # Agrupar los quants por producto para sumar las cantidades disponibles
         product_qty = {}
@@ -518,8 +520,8 @@ class ProductTemplateSplitColor(models.Model):
             }
             response = requests.post(url, headers=headers, json=data)
             if response.status_code in (200, 201):
-                _logger.info("Stock updated for product %s (variant %s): %s available", product.product_tmpl_id.name, product.name, available_qty)
+                _logger.info("WSSH Stock updated for product %s (variant %s): %s available", product.product_tmpl_id.name, product.name, available_qty)
                 updated_ids.append(product.id)
             else:
-                _logger.warning("Failed to update stock for product %s (variant %s): %s", product.product_tmpl_id.name, product.name, response.text)
+                _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s", product.product_tmpl_id.name, product.name, response.text)
         return updated_ids
