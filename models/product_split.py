@@ -5,6 +5,7 @@ import logging
 import json
 import requests
 import re
+import time
 
 _logger = logging.getLogger(__name__)
 
@@ -486,29 +487,38 @@ class ProductTemplateSplitColor(models.Model):
         _logger.info("WSSH Exportar stocks")
         updated_ids = []
         location = self.env['shopify.location'].sudo().search([('shopify_location_id', '!=', False)], limit=1)
-
-
+    
         # Dominio en stock.quant usando búsqueda en campo relacionado:
-        domain = [            
+        domain = [
             ('product_id.shopify_inventory_item_id', '!=', False)
         ]
         if shopify_instance.last_export_stock:
             domain.append(('write_date', '>', shopify_instance.last_export_stock))
-
-        stock_quants = self.env['stock.quant'].sudo().search(domain,order="product_id")
-        _logger.info(f"WSSH Found {len(stock_quants)} fecha {shopify_instance.last_export_stock}")
-        
+    
+        stock_quants = self.env['stock.quant'].sudo().search(domain, order="product_id")
+        _logger.info(f"WSSH Found {len(stock_quants)} quants desde {shopify_instance.last_export_stock}")
+    
         # Agrupar los quants por producto para sumar las cantidades disponibles
         product_qty = {}
         for quant in stock_quants:
             product = quant.product_id
             product_qty.setdefault(product, 0)
             product_qty[product] += quant.quantity
-
+    
+        # Variable para controlar el tiempo de la última petición
+        last_query_time = 0.0
+    
         # Actualizar Shopify para cada producto
         for product, available_qty in product_qty.items():
-            _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty}" )
-            url = url = self.get_products_url(shopify_instance, 'inventory_levels/set.json')
+            _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty}")
+    
+            # Esperar si la última petición se realizó hace menos de 0.5 segundos
+            elapsed = time.time() - last_query_time
+            if elapsed < 0.5:
+                time.sleep(0.5 - elapsed)
+            last_query_time = time.time()
+    
+            url = self.get_products_url(shopify_instance, 'inventory_levels/set.json')
             headers = {
                 "X-Shopify-Access-Token": shopify_instance.shopify_shared_secret,
                 "Content-Type": "application/json"
@@ -518,10 +528,26 @@ class ProductTemplateSplitColor(models.Model):
                 "inventory_item_id": product.shopify_inventory_item_id,
                 "available": int(available_qty),
             }
-            response = requests.post(url, headers=headers, json=data)
-            if response.status_code in (200, 201):
-                _logger.info("WSSH Stock updated for product %s (variant %s): %s available", product.product_tmpl_id.name, product.name, available_qty)
-                updated_ids.append(product.id)
-            else:
-                _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s", product.product_tmpl_id.name, product.name, response.text)
+    
+            # Lógica para reintentar en caso de error de límite de peticiones
+            max_retries = 1
+            attempt = 0
+            while attempt <= max_retries:
+                response = requests.post(url, headers=headers, json=data)
+                if response.status_code in (200, 201):
+                    _logger.info("WSSH Stock updated for product %s (variant %s): %s available",
+                                 product.product_tmpl_id.name, product.name, available_qty)
+                    updated_ids.append(product.id)
+                    break  # Salir del loop si la petición fue exitosa
+                elif "Exceeded 2 calls per second" in response.text:
+                    _logger.warning("WSSH Rate limit exceeded for product %s. Esperando 1 segundo y reintentando...", product.default_code)
+                    time.sleep(1)
+                    attempt += 1
+                    # Actualizamos el tiempo de la última petición para que se cumpla el intervalo en el reintento
+                    last_query_time = time.time()
+                else:
+                    _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s",
+                                    product.product_tmpl_id.name, product.name, response.text)
+                    break
+    
         return updated_ids
