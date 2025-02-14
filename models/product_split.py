@@ -485,7 +485,7 @@ class ProductTemplateSplitColor(models.Model):
         """
         _logger.info("WSSH Exportar stocks")
         updated_ids = []
-        location = self.env['shopify.location'].sudo().search([('is_shopify', '=', True)], limit=1)
+        location = self.env['shopify.location'].sudo().search([('shopify_location_id', '!=', False)], limit=1)
 
 
         # Dominio en stock.quant usando búsqueda en campo relacionado:
