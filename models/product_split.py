@@ -481,8 +481,10 @@ class ProductTemplateSplitColor(models.Model):
         Se realiza una única búsqueda de stock.quant en la ubicación definida en la instancia, filtrando:
           - Stock de la ubicación asignada.
           - Productos cuya variante tenga shopify_inventory_item_id definido.
-          - Si shopify_instance.last_export_stock existe, solo aquellos cuyo product_id.write_date es posterior.
+          - Si shopify_instance.last_export_stock existe, solo aquellos cuyo write_date es posterior.
         Se agrupan los quants por producto para sumar la cantidad disponible y se actualiza el stock en Shopify.
+        En caso de superar un timeout predefinido en la iteración, se actualiza la fecha de última exportación con
+        el write_date del stock.quant actual.
         """
         _logger.info("WSSH Exportar stocks")
         updated_ids = []
@@ -495,24 +497,42 @@ class ProductTemplateSplitColor(models.Model):
         if shopify_instance.last_export_stock:
             domain.append(('write_date', '>', shopify_instance.last_export_stock))
     
-        stock_quants = self.env['stock.quant'].sudo().search(domain, order="product_id")
+        # Ordenar los stock.quants por write_date ascendente
+        stock_quants = self.env['stock.quant'].sudo().search(domain, order="write_date asc")
         _logger.info(f"WSSH Found {len(stock_quants)} quants desde {shopify_instance.last_export_stock}")
     
-        # Agrupar los quants por producto para sumar las cantidades disponibles
-        product_qty = {}
+        # Agrupar los quants por producto, sumando cantidades y tomando el máximo write_date para cada producto
+        product_data = {}
         for quant in stock_quants:
             product = quant.product_id
-            product_qty.setdefault(product, 0)
-            product_qty[product] += quant.quantity
+            if product not in product_data:
+                product_data[product] = {'quantity': 0, 'write_date': quant.write_date}
+            product_data[product]['quantity'] += quant.quantity
+            if quant.write_date > product_data[product]['write_date']:
+                product_data[product]['write_date'] = quant.write_date
     
-        # Variable para controlar el tiempo de la última petición
+        # Ordenar los productos por write_date ascendente (del grupo)
+        sorted_products = sorted(product_data.items(), key=lambda x: x[1]['write_date'])
+    
+        # Variables para controlar el tiempo entre peticiones y el tiempo total de iteración
         last_query_time = 0.0
+        iteration_timeout = 500  # Tiempo máximo permitido para la iteración en segundos
+        iteration_start_time = time.time()
     
         # Actualizar Shopify para cada producto
-        for product, available_qty in product_qty.items():
-            _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty}")
+        for product, data in sorted_products:
+            # Comprobar si se ha superado el tiempo máximo permitido en la iteración
+            if time.time() - iteration_start_time > iteration_timeout:
+                _logger.error("WSSH Timeout de iteración alcanzado para el producto %s. Actualizando last_export_stock con write_date %s",
+                              product.default_code, data['write_date'])
+                shopify_instance.last_export_stock = data['write_date']
+                return updated_ids
     
-            # Esperar si la última petición se realizó hace menos de 0.5 segundos
+            available_qty = data['quantity']
+            current_write_date = data['write_date']
+            _logger.info(f"WSSH iterando {product.default_code} cantidad {available_qty} con write_date {current_write_date}")
+    
+            # Esperar si la última petición se realizó hace menos de 0.5 segundos (máximo 2 peticiones/segundo)
             elapsed = time.time() - last_query_time
             if elapsed < 0.5:
                 time.sleep(0.5 - elapsed)
@@ -523,17 +543,16 @@ class ProductTemplateSplitColor(models.Model):
                 "X-Shopify-Access-Token": shopify_instance.shopify_shared_secret,
                 "Content-Type": "application/json"
             }
-            data = {
+            data_payload = {
                 "location_id": location.shopify_location_id,
                 "inventory_item_id": product.shopify_inventory_item_id,
                 "available": int(available_qty),
             }
     
-            # Lógica para reintentar en caso de error de límite de peticiones
             max_retries = 1
             attempt = 0
             while attempt <= max_retries:
-                response = requests.post(url, headers=headers, json=data)
+                response = requests.post(url, headers=headers, json=data_payload)
                 if response.status_code in (200, 201):
                     _logger.info("WSSH Stock updated for product %s (variant %s): %s available",
                                  product.product_tmpl_id.name, product.name, available_qty)
@@ -543,7 +562,6 @@ class ProductTemplateSplitColor(models.Model):
                     _logger.warning("WSSH Rate limit exceeded for product %s. Esperando 1 segundo y reintentando...", product.default_code)
                     time.sleep(1)
                     attempt += 1
-                    # Actualizamos el tiempo de la última petición para que se cumpla el intervalo en el reintento
                     last_query_time = time.time()
                 else:
                     _logger.warning("WSSH Failed to update stock for product %s (variant %s): %s",
