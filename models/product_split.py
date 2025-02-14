@@ -493,10 +493,10 @@ class ProductTemplateSplitColor(models.Model):
             ('product_id.shopify_inventory_item_id', '!=', False)
         ]
         if shopify_instance.last_export_stock:
-            domain.append(('product_id.write_date', '>', shopify_instance.last_export_stock))
+            domain.append(('write_date', '>', shopify_instance.last_export_stock))
 
-        stock_quants = self.env['stock.quant'].sudo().search(domain, order="product_id")
-        _logger.info("WSSH Found %d ", len(stock_quants))
+        stock_quants = self.env['stock.quant'].sudo().search(domain, limit=2, order="product_id")
+        _logger.info(f"WSSH Found {len(stock_quants)} fecha {shopify_instance.last_export_stock})
         
         # Agrupar los quants por producto para sumar las cantidades disponibles
         product_qty = {}
@@ -516,7 +516,7 @@ class ProductTemplateSplitColor(models.Model):
             data = {
                 "location_id": location.shopify_location_id,
                 "inventory_item_id": product.shopify_inventory_item_id,
-                "available": available_qty,
+                "available": int(available_qty),
             }
             response = requests.post(url, headers=headers, json=data)
             if response.status_code in (200, 201):
