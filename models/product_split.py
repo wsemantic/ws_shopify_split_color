@@ -474,7 +474,6 @@ class ProductTemplateSplitColor(models.Model):
         
         return product_template
 
- 
     def export_stock_to_shopify(self, shopify_instance):
         """
         Exporta el stock a Shopify para las variantes que tienen definido el campo shopify_inventory_item_id.
