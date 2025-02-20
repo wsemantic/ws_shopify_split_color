@@ -91,11 +91,12 @@ class ResPartner(models.Model):
             street = street2 = city = zip = ""
             country_id = False
             if address:
-                street = address[0].get('address1') or ""
-                street2 = address[0].get('address2') or ""
-                city = address[0].get('city') or ""
-                zip = address[0].get('zip') or ""
-                country_code = address[0].get('country_code')
+                street = shopify_customer.get('address1') or address[0].get('address1') or ""
+                street2 = shopify_customer.get('address2') or address[0].get('address2') or ""
+                city = shopify_customer.get('city') or address[0].get('city') or ""
+                zip = shopify_customer.get('zip') or address[0].get('zip') or ""
+                country_code = shopify_customer.get('country_code') or address[0].get('country_code')
+                phone=shopify_customer.get('phone') or address[0].get('phone')
                 country = self.env['res.country'].sudo().search([('code', '=', country_code)], limit=1)
                 country_id = country.id if country else False
     
@@ -113,8 +114,8 @@ class ResPartner(models.Model):
                         vals_update['name'] = name
                     if shopify_customer.get('email'):
                         vals_update['email'] = shopify_customer.get('email')
-                    if shopify_customer.get('phone'):
-                        vals_update['phone'] = shopify_customer.get('phone')
+                    if phone:
+                        vals_update['phone'] = phone
                     if street:
                         vals_update['street'] = street
                     if street2:
@@ -143,7 +144,7 @@ class ResPartner(models.Model):
                     'shopify_customer_id': shopify_customer.get('id'),
                     'ref': 'SID' + str(shopify_customer.get('id')),
                     'is_shopify_customer': True,
-                    'phone': shopify_customer.get('phone'),
+                    'phone': phone,
                     'shopify_instance_id': shopify_instance_id.id,
                     'shopify_note': shopify_customer.get('note'),
                     'street': street,
